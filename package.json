@@ -1,6 +1,6 @@
 {
   "name": "@n11x/hecate-cli",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "Hecate — encrypted mesh network client by the N11X Collective",
   "license": "MIT",
   "author": "N11X Collective",

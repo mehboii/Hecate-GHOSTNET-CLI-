@@ -1,6 +1,6 @@
 [package]
 name = "hecate"
-version = "0.2.0"
+version = "0.2.13"
 edition = "2021"
 description = "Hecate — encrypted mesh network client by the N11X Collective"
 license = "MIT"
