@@ -13,7 +13,7 @@ pub fn print_banner() {
     println!("{}", format!("╔{}╗", "═".repeat(W)).white().bold());
     frame_plain("");
     frame_gradient("N 1 1 X   C O L L E C T I V E");
-    frame_gradient("· G H O S T N E T   C L I ·");
+    frame_gradient("· H E C A T E ·");
     frame_plain("");
     frame_plain("encrypted · decentralized · private");
     frame_plain("");

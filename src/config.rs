@@ -1,4 +1,4 @@
-//! Non-secret GhostNet CLI configuration. Seed phrases deliberately never live here.
+//! Non-secret Hecate configuration. Seed phrases deliberately never live here.
 
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};

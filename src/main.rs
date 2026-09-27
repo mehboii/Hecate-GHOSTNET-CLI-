@@ -20,7 +20,7 @@ fn main() {
     }
 
     match args.command {
-        // No subcommand → drop into the interactive GhostNet shell.
+        // No subcommand → drop into the interactive Hecate shell.
         None => repl::run(),
 
         // A subcommand was given → run it once and exit (good for scripting).

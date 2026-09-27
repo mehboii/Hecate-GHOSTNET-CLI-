@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 'use strict';
 
-// Launcher: forwards all arguments to the downloaded native GhostNet binary.
+// Launcher: forwards all arguments to the downloaded native Hecate binary.
 
 const path = require('path');
 const fs = require('fs');
 const { spawnSync, spawn } = require('child_process');
 
 const ext = process.platform === 'win32' ? '.exe' : '';
-const bin = path.join(__dirname, 'bin', `ghostnet${ext}`);
+const bin = path.join(__dirname, 'bin', `hecate${ext}`);
 
 // PlusPanel health beacon. Reports this CLI's health to the pluspanel-health API
 // ("{base}/api/push", header x-api-key) once per invocation. Runs in a DETACHED,
@@ -27,7 +27,7 @@ function reportHealth() {
       version = require('../package.json').version || version;
     } catch {}
     const body = JSON.stringify({
-      name: process.env.PLUSPANEL_APP_NAME || 'ghostnet-cli',
+      name: process.env.PLUSPANEL_APP_NAME || 'hecate-cli',
       status: 'ok',
       version,
     });
@@ -50,7 +50,7 @@ function reportHealth() {
 
 if (!fs.existsSync(bin)) {
   console.error(
-    'GhostNet CLI binary not found. Try reinstalling: npm install -g @n11x/ghostnet-cli',
+    'Hecate binary not found. Try reinstalling: npm install -g @n11x/hecate-cli',
   );
   process.exit(1);
 }
@@ -60,7 +60,7 @@ reportHealth();
 const result = spawnSync(bin, process.argv.slice(2), { stdio: 'inherit' });
 
 if (result.error) {
-  console.error(`Failed to run GhostNet CLI: ${result.error.message}`);
+  console.error(`Failed to run Hecate: ${result.error.message}`);
   process.exit(1);
 }
 

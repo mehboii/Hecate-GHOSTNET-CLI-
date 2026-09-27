@@ -1,4 +1,4 @@
-//! Interactive GhostNet shell. Entered when `ghostnet` is run with no subcommand.
+//! Interactive Hecate shell. Entered when `hecate` is run with no subcommand.
 
 use std::io::{self, BufRead, Write};
 
@@ -20,7 +20,7 @@ pub fn run() {
     let stdin = io::stdin();
 
     loop {
-        print!("{} ", banner::brand("ghostnet›"));
+        print!("{} ", banner::brand("hecate›"));
         let _ = io::stdout().flush();
 
         let mut line = String::new();
@@ -63,11 +63,11 @@ pub fn run() {
             }
         };
 
-        // Be forgiving if the user habitually types the full `ghostnet …`
+        // Be forgiving if the user habitually types the full `hecate …`
         // command inside the shell — drop a leading program name.
         if tokens
             .first()
-            .is_some_and(|t| t.eq_ignore_ascii_case("ghostnet"))
+            .is_some_and(|t| t.eq_ignore_ascii_case("hecate"))
         {
             tokens.remove(0);
         }
@@ -77,7 +77,7 @@ pub fn run() {
 
         // Reuse the same clap parser; prepend the program name it expects.
         let mut argv = Vec::with_capacity(tokens.len() + 1);
-        argv.push("ghostnet".to_string());
+        argv.push("hecate".to_string());
         argv.extend(tokens);
 
         match Cli::try_parse_from(&argv) {

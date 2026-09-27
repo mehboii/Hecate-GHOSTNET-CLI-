@@ -1,11 +1,11 @@
 use clap::{Parser, Subcommand};
 
-/// GhostNet CLI — encrypted mesh network client by the N11X Collective.
+/// Hecate — encrypted mesh network client by the N11X Collective.
 #[derive(Parser)]
 #[command(
-    name = "ghostnet",
+    name = "hecate",
     version,
-    about = "GhostNet CLI — encrypted mesh client · N11X Collective",
+    about = "Hecate — encrypted mesh client · N11X Collective",
     long_about = None,
     propagate_version = true
 )]

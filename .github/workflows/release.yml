@@ -61,11 +61,11 @@ jobs:
 
       - name: Stage artifact (unix)
         if: runner.os != 'Windows'
-        run: cp "target/${{ matrix.target }}/release/ghostnet" "${{ matrix.asset }}"
+        run: cp "target/${{ matrix.target }}/release/hecate" "${{ matrix.asset }}"
 
       - name: Stage artifact (windows)
         if: runner.os == 'Windows'
-        run: copy "target\${{ matrix.target }}\release\ghostnet.exe" "${{ matrix.asset }}"
+        run: copy "target\${{ matrix.target }}\release\hecate.exe" "${{ matrix.asset }}"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

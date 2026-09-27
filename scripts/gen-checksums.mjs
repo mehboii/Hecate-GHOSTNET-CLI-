@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO = 'mehboii/GHOSTNET-CLI';
+const REPO = 'mehboii/Hecate-GHOSTNET-CLI-';
 const ASSETS = [
   'ghostnet-win32-x64.exe',
   'ghostnet-linux-x64',

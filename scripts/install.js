@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// Postinstall: download the prebuilt GhostNet CLI binary for this platform from
+// Postinstall: download the prebuilt Hecate binary for this platform from
 // the matching GitHub Release, verify its SHA-256 against the checksum manifest
 // shipped inside this npm package, then install it to scripts/bin/.
 //
@@ -18,7 +18,7 @@ const { URL } = require('url');
 const { version } = require('../package.json');
 const checksums = require('../checksums.json');
 
-const REPO = 'mehboii/GHOSTNET-CLI';
+const REPO = 'mehboii/Hecate-GHOSTNET-CLI-';
 const MAX_REDIRECTS = 5;
 const MAX_BYTES = 64 * 1024 * 1024; // 64 MB ceiling — binaries are a few MB.
 
@@ -73,7 +73,7 @@ function download(rawUrl, tmpPath, redirectsLeft = MAX_REDIRECTS) {
     }
 
     https
-      .get(u, { headers: { 'User-Agent': 'ghostnet-cli-installer' } }, (res) => {
+      .get(u, { headers: { 'User-Agent': 'hecate-cli-installer' } }, (res) => {
         const { statusCode, headers } = res;
 
         if (statusCode >= 300 && statusCode < 400 && headers.location) {
@@ -127,11 +127,11 @@ async function main() {
   fs.mkdirSync(binDir, { recursive: true });
 
   const ext = process.platform === 'win32' ? '.exe' : '';
-  const dest = path.join(binDir, `ghostnet${ext}`);
-  const tmp = path.join(binDir, `.ghostnet-download-${process.pid}${ext}`);
+  const dest = path.join(binDir, `hecate${ext}`);
+  const tmp = path.join(binDir, `.hecate-download-${process.pid}${ext}`);
   const url = `https://github.com/${REPO}/releases/download/v${version}/${asset}`;
 
-  process.stdout.write(`Downloading GhostNet CLI v${version} (${asset})…\n`);
+  process.stdout.write(`Downloading Hecate v${version} (${asset})…\n`);
 
   try {
     await download(url, tmp);
@@ -149,7 +149,7 @@ async function main() {
     if (process.platform !== 'win32') {
       fs.chmodSync(dest, 0o755);
     }
-    process.stdout.write('GhostNet CLI installed (checksum verified). Run `ghostnet --help`.\n');
+    process.stdout.write('Hecate installed (checksum verified). Run `hecate --help`.\n');
   } finally {
     // Never leave a partial/unverified download lying around.
     try {
@@ -161,6 +161,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(`GhostNet CLI install failed: ${err.message}`);
+  console.error(`Hecate install failed: ${err.message}`);
   process.exit(1);
 });

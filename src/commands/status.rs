@@ -8,7 +8,7 @@ pub fn run() -> Result<()> {
         if node::bridge_installed() {
             "installed"
         } else {
-            "not installed — run `ghostnet setup`"
+            "not installed — run `hecate setup`"
         }
     );
     println!(
