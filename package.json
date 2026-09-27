@@ -1,18 +1,19 @@
 {
-  "name": "@n11x/ghostnet-cli",
+  "name": "@n11x/hecate-cli",
   "version": "0.2.12",
-  "description": "GhostNet CLI — encrypted mesh network client by the N11X Collective",
+  "description": "Hecate — encrypted mesh network client by the N11X Collective",
   "license": "MIT",
   "author": "N11X Collective",
-  "homepage": "https://github.com/mehboii/GHOSTNET-CLI#readme",
+  "homepage": "https://github.com/mehboii/Hecate-GHOSTNET-CLI-#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mehboii/GHOSTNET-CLI.git"
+    "url": "git+https://github.com/mehboii/Hecate-GHOSTNET-CLI-.git"
   },
   "bugs": {
-    "url": "https://github.com/mehboii/GHOSTNET-CLI/issues"
+    "url": "https://github.com/mehboii/Hecate-GHOSTNET-CLI-/issues"
   },
   "keywords": [
+    "hecate",
     "ghostnet",
     "cli",
     "mesh-network",
@@ -22,7 +23,7 @@
     "n11x"
   ],
   "bin": {
-    "ghostnet": "scripts/run.js"
+    "hecate": "scripts/run.js"
   },
   "scripts": {
     "build": "cargo build --release",

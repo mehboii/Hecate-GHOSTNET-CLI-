@@ -62,10 +62,10 @@ pub fn ensure_bridge_files() -> Result<PathBuf> {
 fn require_ready() -> Result<PathBuf> {
     let script = bridge_script()?;
     if !script.exists() {
-        return Err(anyhow!("the GhostNet SDK bridge isn't set up yet — run `ghostnet setup` first"));
+        return Err(anyhow!("the GhostNet SDK bridge isn't set up yet — run `hecate setup` first"));
     }
     if !bridge_installed() {
-        return Err(anyhow!("the GhostNet SDK isn't installed yet — run `ghostnet setup` first"));
+        return Err(anyhow!("the GhostNet SDK isn't installed yet — run `hecate setup` first"));
     }
     Ok(script)
 }

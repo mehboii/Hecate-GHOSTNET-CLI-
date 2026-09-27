@@ -1,15 +1,15 @@
 [package]
-name = "ghostnet"
+name = "hecate"
 version = "0.2.0"
 edition = "2021"
-description = "GhostNet CLI — encrypted mesh network client by the N11X Collective"
+description = "Hecate — encrypted mesh network client by the N11X Collective"
 license = "MIT"
 authors = ["N11X Collective"]
-repository = "https://github.com/mehboii/GHOSTNET-CLI"
+repository = "https://github.com/mehboii/Hecate-GHOSTNET-CLI-"
 readme = "README.md"
 
 [[bin]]
-name = "ghostnet"
+name = "hecate"
 path = "src/main.rs"
 
 [dependencies]

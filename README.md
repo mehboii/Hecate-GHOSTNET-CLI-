@@ -1,8 +1,8 @@
-# GhostNet CLI
+# Hecate
 
 > encrypted · decentralized · private — by the **N11X Collective**
 
-A native Rust command-line client for the **GhostNet** encrypted mesh network. It
+Hecate is a native Rust command-line client for the **GhostNet** encrypted mesh network. It
 drives the official [`@n11x/ghostnet-sdk`](https://www.npmjs.com/package/@n11x/ghostnet-sdk)
 through a small bundled Node bridge, so every cryptographic operation uses the
 same audited SDK that powers GhostNet apps.
@@ -10,7 +10,7 @@ same audited SDK that powers GhostNet apps.
 ```
 ╔═══════════════════════════════════════════════╗
 ║        N 1 1 X   C O L L E C T I V E           ║
-║         · G H O S T N E T   C L I ·            ║
+║                · H E C A T E ·                ║
 ╚═══════════════════════════════════════════════╝
  Welcome, User !
 ```
@@ -18,11 +18,11 @@ same audited SDK that powers GhostNet apps.
 ## Install (npm)
 
 ```bash
-npm install -g @n11x/ghostnet-cli
+npm install -g @n11x/hecate-cli
 ```
 
 This downloads the prebuilt binary for your platform (Windows / macOS / Linux,
-x64 + arm64) from GitHub Releases and exposes the `ghostnet` command. Node.js 18+
+x64 + arm64) from GitHub Releases and exposes the `hecate` command. Node.js 18+
 must be on your `PATH` at runtime (the CLI drives the SDK through it).
 
 ## Requirements (building from source)
@@ -36,7 +36,7 @@ must be on your `PATH` at runtime (the CLI drives the SDK through it).
 ```bash
 # from this directory
 cargo build --release
-# the binary lands at target/release/ghostnet (ghostnet.exe on Windows)
+# the binary lands at target/release/hecate (hecate.exe on Windows)
 
 # optional: install it onto your PATH
 cargo install --path .
@@ -46,29 +46,29 @@ cargo install --path .
 
 ```bash
 # 1. Pull in the GhostNet SDK (runs: npm install @n11x/ghostnet-sdk)
-ghostnet setup
+hecate setup
 
 # 2. Create an identity (back up the seed phrase!)
-ghostnet identity create
+hecate identity create
 
 # 3. Restore an identity later
-ghostnet identity load "word1 word2 ... word12"
+hecate identity load "word1 word2 ... word12"
 
 # 4. Send an encrypted message to a peer
 #    (GHOSTNET_SEED is required; it avoids shell-history and argv exposure)
-GHOSTNET_SEED="your twelve words ..." ghostnet send 0x<peer-node-id> "hello from the mesh!"
+GHOSTNET_SEED="your twelve words ..." hecate send 0x<peer-node-id> "hello from the mesh!"
 
 # 5. Listen for incoming messages
-GHOSTNET_SEED="your twelve words ..." ghostnet listen
+GHOSTNET_SEED="your twelve words ..." hecate listen
 ```
 
-`ghostnet info` shows the CLI version, SDK package, and whether the bridge is
+`hecate info` shows the CLI version, SDK package, and whether the bridge is
 installed. Add `--no-color` to any command for plain output.
 
 ## How it works
 
 ```
- ghostnet (Rust binary)
+ hecate (Rust binary)
         │  spawns `node`
         ▼
  ~/.ghostnet-cli/bridge/ghostnet-bridge.mjs

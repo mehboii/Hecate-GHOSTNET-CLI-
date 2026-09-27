@@ -20,7 +20,7 @@ pub fn run() -> Result<()> {
         if node::bridge_installed() {
             "✓"
         } else {
-            "✗ (run `ghostnet setup`)"
+            "✗ (run `hecate setup`)"
         }
     );
     match config::load() {
