@@ -21,7 +21,7 @@ fn main() {
     }
 
     match args.command {
-        // No subcommand → drop into the interactive GhostNet shell.
+        // No subcommand → drop into the interactive Hecate shell.
         None if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() => repl::run(),
         None => {
             use clap::CommandFactory;

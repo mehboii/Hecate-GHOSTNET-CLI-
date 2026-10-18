@@ -15,7 +15,7 @@ impl Sandbox {
         Self(path)
     }
     fn command(&self, args: &[&str]) -> Command {
-        let mut command = Command::new(env!("CARGO_BIN_EXE_ghostnet"));
+        let mut command = Command::new(env!("CARGO_BIN_EXE_hecate"));
         command
             .args(args)
             .current_dir(&self.0)
@@ -73,7 +73,7 @@ fn help_version_and_usage_exit_codes() {
         assert!(o.status.success());
         assert_eq!(
             stdout(&o).trim(),
-            concat!("ghostnet ", env!("CARGO_PKG_VERSION"))
+            concat!("hecate ", env!("CARGO_PKG_VERSION"))
         );
     }
     for args in [

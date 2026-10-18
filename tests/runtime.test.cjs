@@ -147,7 +147,7 @@ test('real installer process installs matching artifact and preserves it on chec
     });
     let result = run(false);
     assert.equal(result.status, 0, result.stderr);
-    const bin = path.join(dir, 'scripts/bin', process.platform === 'win32' ? 'ghostnet.exe' : 'ghostnet');
+    const bin = path.join(dir, 'scripts/bin', process.platform === 'win32' ? 'hecate.exe' : 'hecate');
     assert.equal(fs.readFileSync(bin, 'utf8'), 'fixture artifact');
     result = run(true);
     assert.equal(result.status, 1);

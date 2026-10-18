@@ -115,8 +115,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "ghostnet"
-version = "0.2.12"
+name = "hecate"
+version = "0.2.13"
 dependencies = [
  "anyhow",
  "clap",

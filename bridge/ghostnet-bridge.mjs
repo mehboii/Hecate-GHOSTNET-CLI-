@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// GhostNet CLI <-> SDK bridge.
+// Hecate <-> GhostNet SDK bridge.
 //
 // The Rust CLI spawns this script with a sub-command and arguments, then reads
 // newline-delimited JSON ("NDJSON") from stdout. Every line is a JSON object

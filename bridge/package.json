@@ -1,9 +1,9 @@
 {
-  "name": "ghostnet-cli-bridge",
+  "name": "hecate-bridge",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Node bridge that lets the GhostNet Rust CLI drive @n11x/ghostnet-sdk",
+  "description": "Node bridge that lets Hecate drive @n11x/ghostnet-sdk",
   "dependencies": {
     "@n11x/ghostnet-sdk": "latest"
   }

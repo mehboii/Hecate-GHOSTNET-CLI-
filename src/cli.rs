@@ -1,14 +1,14 @@
 use clap::{Parser, Subcommand};
 
-/// GhostNet CLI — encrypted mesh network client by the N11X Collective.
+/// Hecate — encrypted mesh network client by the N11X Collective.
 #[derive(Parser)]
 #[command(
-    name = "ghostnet",
+    name = "hecate",
     version,
-    about = "GhostNet CLI — encrypted mesh client · N11X Collective",
+    about = "Hecate — encrypted mesh client · N11X Collective",
     long_about = None,
     propagate_version = true,
-    after_help = "Examples:\n  ghostnet setup\n  ghostnet identity create --name laptop\n  ghostnet config show\n  ghostnet history --limit 10\n  ghostnet send PEER \"hello\"\n\nSet GHOSTNET_SEED for send/listen. Run without a command in a terminal for the shell."
+    after_help = "Examples:\n  hecate setup\n  hecate identity create --name laptop\n  hecate config show\n  hecate history --limit 10\n  hecate send PEER \"hello\"\n\nSet GHOSTNET_SEED for send/listen. Run without a command in a terminal for the shell."
 )]
 pub struct Cli {
     /// Show version (alias for --version).

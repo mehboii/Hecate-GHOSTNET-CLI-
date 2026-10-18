@@ -46,6 +46,6 @@ pub fn run() -> Result<()> {
         "{}",
         "GhostNet SDK installed. You're ready to go.".green().bold()
     );
-    println!("  Next: {}", "ghostnet identity create".bold());
+    println!("  Next: {}", "hecate identity create".bold());
     Ok(())
 }

@@ -136,3 +136,13 @@ Automation migration: no-command pipes now print help instead of consuming REPL 
 - **P3 / not applicable:** project-level identity config, plugin architecture, persistent debug log infrastructure, credential vault, mandatory destructive confirmations, and extra quiet/progress frameworks are not required by the current focused client. Explicit commands already operate noninteractively; terminal-only REPL is retained for convenience. JSON is provided where useful for local metadata rather than adding untested network-output modes.
 
 Implementation was kept in the existing Rust/clap/Node architecture. No dependency or framework was added, no Git commit/push/release was performed, and the inaccessible SDK dependency is clearly reported rather than replaced or mocked as a claimed working production backend.
+
+## Integration with Hecate main
+
+After the audit commit was pushed, `main` at `65b2cd0` was merged into `separate-branch` to resolve seven reported conflicts. The original findings above remain historical. The final package/native executable is now **Hecate 0.2.13**, npm package `@n11x/hecate-cli`, with `hecate` command examples and the Hecate repository/download location from main. Cargo.lock was updated only for the root package name/version; dependency versions were preserved.
+
+Resolution retained the audit's installer pipeline/timeouts, telemetry removal, terminal-aware startup, SDK readiness checks, deadlines, exit handling, JSON output, tests and CI. It also retained main's Hecate branding, npm metadata, release binary name and existing 0.2.13 checksums. The `ghostnet-*` release asset names, `@n11x/ghostnet-sdk`, `GHOSTNET_*` environment variables and `.ghostnet-cli` data directory are intentional compatibility names from main. They were not renamed. The SDK E404 limitation remains unchanged.
+
+The test harness now executes the `hecate` binary, expects its version output, and validates installer output named `hecate`/`hecate.exe`. The current canonical command reference is the README and `hecate --help`. No health credential or health reporting was reintroduced while resolving the launcher conflict.
+
+Post-resolution verification passed: all 15 tests via `npm test`, formatting/clippy via `npm run check`, locked release build, all four JavaScript syntax checks, npm package dry run, and whitespace check. The resulting release binary reports `hecate 0.2.13`; its help lists the preserved commands with Hecate examples, and config/history JSON smoke checks passed.

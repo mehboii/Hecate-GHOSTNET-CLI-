@@ -1,4 +1,4 @@
-# GhostNet CLI
+# Hecate
 
 A Rust command-line messaging client with clap command parsing and a bundled Node bridge to `@n11x/ghostnet-sdk`. npm distributes the native executable through a small launcher and a SHA-256-verifying installer. See [CLI_AUDIT.md](CLI_AUDIT.md) for architecture, original findings, fixes and verification evidence.
 
@@ -7,9 +7,9 @@ A Rust command-line messaging client with clap command parsing and a bundled Nod
 ## Install and build
 
 ```sh
-npm install -g @n11x/ghostnet-cli
+npm install -g @n11x/hecate-cli
 # Upgrade an existing installation:
-npm install -g @n11x/ghostnet-cli@latest
+npm install -g @n11x/hecate-cli@latest
 ```
 
 The installer supports Windows x64, Linux x64/arm64 and macOS x64/arm64. Windows arm64 has no native release asset. Node.js 18+ must be on PATH at runtime. npm must be available for setup. Downloads use HTTPS, a GitHub host allowlist, bounded redirects, size and time limits, exclusive temporary files, and hashes pinned in the npm package. Downloads that fail verification are never installed.
@@ -25,28 +25,28 @@ Cargo.lock is checked in. The minimum Rust version has not been independently te
 
 ## Commands and examples
 
-Run `ghostnet --help` or `ghostnet COMMAND --help` for clap-generated usage. `-h` is help; `-v` and `--version` report the native version. `--no-color` and `--debug` work on all commands. `NO_COLOR` disables color; redirected output is plain. Debug prints error context, without dumping the environment or raw bridge output.
+Run `hecate --help` or `hecate COMMAND --help` for clap-generated usage. `-h` is help; `-v` and `--version` report the native version. `--no-color` and `--debug` work on all commands. `NO_COLOR` disables color; redirected output is plain. Debug prints error context, without dumping the environment or raw bridge output.
 
 | Command | Purpose / example |
 | --- | --- |
-| `ghostnet setup` | Materialize embedded bridge and install SDK, with a five-minute deadline |
-| `ghostnet info` | Native version, SDK package and local installation readiness |
-| `ghostnet doctor` | Check Node/npm executables, bridge files/package metadata and configuration; exits 1 if a check fails |
-| `ghostnet status` | Saved relay endpoint, public label count, and whether a seed environment value is present |
-| `ghostnet config show [--json]` | Inspect non-secret saved configuration |
-| `ghostnet config set-endpoint wss://relay.example/path` | Save a secure relay URL; substitute your actual relay |
-| `ghostnet config clear-endpoint` | Return to SDK default endpoint |
-| `ghostnet identity create [--name laptop]` | Generate identity with SDK and print seed for backup; optionally save public label |
-| `ghostnet identity load [SEED] [--name laptop]` | Restore using explicit seed or `GHOSTNET_SEED`; optionally save public label |
-| `ghostnet identity list` | List saved labels and public node IDs |
-| `ghostnet identity remove laptop` | Remove public label only; does not delete a network identity |
-| `ghostnet send PEER "hello" [--endpoint wss://relay.example] [--seed SEED]` | SDK send using explicit seed or `GHOSTNET_SEED`; requires configured SDK and real peer |
-| `ghostnet listen [--endpoint wss://relay.example] [--seed SEED]` | Stream incoming events; Ctrl-C stops the bridge |
-| `ghostnet history [--limit 20] [--json]` | Newest-first local message metadata; JSON is an array; limit 0 returns no records |
+| `hecate setup` | Materialize embedded bridge and install SDK, with a five-minute deadline |
+| `hecate info` | Native version, SDK package and local installation readiness |
+| `hecate doctor` | Check Node/npm executables, bridge files/package metadata and configuration; exits 1 if a check fails |
+| `hecate status` | Saved relay endpoint, public label count, and whether a seed environment value is present |
+| `hecate config show [--json]` | Inspect non-secret saved configuration |
+| `hecate config set-endpoint wss://relay.example/path` | Save a secure relay URL; substitute your actual relay |
+| `hecate config clear-endpoint` | Return to SDK default endpoint |
+| `hecate identity create [--name laptop]` | Generate identity with SDK and print seed for backup; optionally save public label |
+| `hecate identity load [SEED] [--name laptop]` | Restore using explicit seed or `GHOSTNET_SEED`; optionally save public label |
+| `hecate identity list` | List saved labels and public node IDs |
+| `hecate identity remove laptop` | Remove public label only; does not delete a network identity |
+| `hecate send PEER "hello" [--endpoint wss://relay.example] [--seed SEED]` | SDK send using explicit seed or `GHOSTNET_SEED`; requires configured SDK and real peer |
+| `hecate listen [--endpoint wss://relay.example] [--seed SEED]` | Stream incoming events; Ctrl-C stops the bridge |
+| `hecate history [--limit 20] [--json]` | Newest-first local message metadata; JSON is an array; limit 0 returns no records |
 
 Network examples use placeholders, not an advertised public relay or a validated node ID. The SDK validates the actual identity/peer format; the CLI rejects empty peers, whitespace/control characters, empty messages, and messages over 65,536 UTF-8 bytes. A send success means the SDK send operation completed; it does not establish receipt by the peer.
 
-For message text beginning with a dash, end option parsing explicitly: `ghostnet send PEER -- "--endpoint"`. Put any actual options before `--`.
+For message text beginning with a dash, end option parsing explicitly: `hecate send PEER -- "--endpoint"`. Put any actual options before `--`.
 
 ### Seeds and first use
 
@@ -57,9 +57,9 @@ PowerShell example (masked input):
 ```powershell
 $secret = Read-Host 'Seed phrase' -AsSecureString
 $env:GHOSTNET_SEED = [System.Net.NetworkCredential]::new('', $secret).Password
-ghostnet identity load --name laptop
-ghostnet send REAL_PEER_NODE_ID 'hello from the mesh'
-ghostnet listen
+hecate identity load --name laptop
+hecate send REAL_PEER_NODE_ID 'hello from the mesh'
+hecate listen
 # When finished:
 Remove-Item Env:GHOSTNET_SEED
 ```
