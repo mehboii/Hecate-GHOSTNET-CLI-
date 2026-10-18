@@ -29,7 +29,7 @@ pub fn run(action: IdentityAction) -> Result<()> {
 
     match action {
         IdentityAction::Create { name } => {
-            println!("{}", "New identity created 🔑".green().bold());
+            println!("{}", "New identity created".green().bold());
             kv("Node ID", &node_id.bright_cyan().to_string());
             kv(
                 "Seed phrase",
@@ -38,7 +38,7 @@ pub fn run(action: IdentityAction) -> Result<()> {
             println!();
             println!(
                 "{}",
-                "  ⚠ Back up your seed phrase. Anyone who has it controls this identity.".yellow()
+                "  Back up your seed phrase. Anyone who has it controls this identity.".yellow()
             );
             if let Some(name) = name {
                 config::label(name.clone(), node_id.clone())?;
