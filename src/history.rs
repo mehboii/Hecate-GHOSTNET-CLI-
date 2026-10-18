@@ -2,7 +2,7 @@
 use crate::config;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+use std::io::{BufRead, BufReader, Write};
 
 #[derive(Serialize, Deserialize)]
 pub struct Entry {
@@ -36,13 +36,30 @@ pub fn record(direction: &str, peer: &str, bytes: usize, outcome: &str) -> Resul
 
 pub fn recent(limit: usize) -> Result<Vec<Entry>> {
     let path = path()?;
-    if !path.exists() {
-        return Ok(Vec::new());
+    let file = match std::fs::File::open(path) {
+        Ok(file) => file,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(e.into()),
+    };
+    let mut entries = std::collections::VecDeque::new();
+    let mut corrupt = 0;
+    for line in BufReader::new(file).lines() {
+        let line = line?;
+        match serde_json::from_str::<Entry>(&line) {
+            Ok(entry) if limit > 0 => {
+                entries.push_back(entry);
+                if entries.len() > limit {
+                    entries.pop_front();
+                }
+            }
+            Ok(_) => {}
+            Err(_) => corrupt += 1,
+        }
     }
-    let mut entries: Vec<Entry> = std::fs::read_to_string(path)?
-        .lines()
-        .filter_map(|line| serde_json::from_str(line).ok())
-        .collect();
+    if corrupt > 0 {
+        eprintln!("warning: skipped {corrupt} malformed history records");
+    }
+    let mut entries: Vec<Entry> = entries.into_iter().collect();
     entries.reverse();
     entries.truncate(limit);
     Ok(entries)

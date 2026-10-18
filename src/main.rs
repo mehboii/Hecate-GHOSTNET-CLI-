@@ -9,26 +9,34 @@ mod repl;
 use clap::Parser;
 use cli::Cli;
 use colored::Colorize;
+use std::io::IsTerminal;
 
 fn main() {
     enable_ansi();
 
     let args = Cli::parse();
 
-    if args.no_color {
+    if args.no_color || std::env::var_os("NO_COLOR").is_some() || !std::io::stdout().is_terminal() {
         colored::control::set_override(false);
     }
 
     match args.command {
         // No subcommand → drop into the interactive Hecate shell.
-        None => repl::run(),
+        None if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() => repl::run(),
+        None => {
+            use clap::CommandFactory;
+            let _ = Cli::command().print_help();
+            println!();
+        }
 
         // A subcommand was given → run it once and exit (good for scripting).
         Some(command) => {
-            banner::print_banner();
-            banner::welcome();
             if let Err(err) = commands::dispatch(command) {
-                eprintln!("{} {}", "error:".red().bold(), err);
+                if args.debug {
+                    eprintln!("{} {err:#}", "error:".red().bold());
+                } else {
+                    eprintln!("{} {}", "error:".red().bold(), err);
+                }
                 std::process::exit(1);
             }
         }

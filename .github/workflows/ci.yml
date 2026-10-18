@@ -1,0 +1,28 @@
+name: CLI checks
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          components: rustfmt, clippy
+      - name: Check runtime and version metadata
+        shell: bash
+        run: |
+          node --version
+          node -e 'const p=require("./package.json");const fs=require("fs");if(!fs.readFileSync("Cargo.toml","utf8").includes(`version = "${p.version}"`))process.exit(1);if(process.env.GITHUB_REF_TYPE==="tag"&&process.env.GITHUB_REF_NAME!==`v${p.version}`)process.exit(1)'
+      - run: npm run check
+      - run: npm test

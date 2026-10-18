@@ -18,7 +18,9 @@ function emit(obj) {
 }
 
 function fail(message, code = 1) {
-  emit({ ok: false, error: String(message) });
+  const seed = process.env.GHOSTNET_SEED || flags.seed || (cmd === 'identity-load' ? positional[0] : undefined);
+  const text = seed ? String(message).split(seed).join('[redacted]') : String(message);
+  emit({ ok: false, error: text });
   process.exit(code);
 }
 
@@ -28,14 +30,27 @@ const [, , cmd, ...rest] = process.argv;
 // treated as a positional argument.
 const flags = {};
 const positional = [];
+// Fixed positional arity prevents message text such as "--endpoint" from
+// being interpreted as an option. Rust passes options after positionals.
+const arity = cmd === 'send' ? 2 : 0;
 for (let i = 0; i < rest.length; i++) {
   const arg = rest[i];
-  if (arg.startsWith('--')) {
-    flags[arg.slice(2)] = rest[++i];
-  } else {
+  if (positional.length < arity) {
     positional.push(arg);
+  } else if (arg === '--endpoint' || arg === '--seed') {
+    if (rest[i + 1] == null || rest[i + 1].startsWith('--')) fail(`missing value for ${arg}`);
+    flags[arg.slice(2)] = rest[++i];
+  } else if (cmd === 'identity-load' && positional.length === 0 && !arg.startsWith('--')) {
+    positional.push(arg);
+  } else {
+    fail('unexpected bridge argument');
   }
 }
+
+const seconds = Number(process.env.GHOSTNET_TIMEOUT_SECS || 60);
+if (!Number.isInteger(seconds) || seconds < 1 || seconds > 86400) fail('GHOSTNET_TIMEOUT_SECS must be between 1 and 86400');
+let deadline = setTimeout(() => fail('SDK operation timed out'), seconds * 1000);
+function finishDeadline() { clearTimeout(deadline); }
 
 // Seed phrase is read from the environment (set by the Rust CLI) so it never
 // appears in this process's argv. Fall back to flags/positional for ad-hoc use.
@@ -73,14 +88,19 @@ async function main() {
     case 'send': {
       const peer = positional[0];
       const message = positional[1];
-      if (!peer || !message) fail('usage: send <peerId> <message> [--seed <phrase>]');
+      if (!peer?.trim() || !message) fail('usage: send <peerId> <message> [--seed <phrase>]');
+      if (Buffer.byteLength(message, 'utf8') > 64 * 1024) fail('message exceeds the 64 KiB UTF-8 limit');
 
       const gn = newClient();
       const seed = seedPhrase();
-      const id = seed ? gn.loadIdentity(seed) : gn.createIdentity();
-      await gn.connect();
-      await gn.send(peer, message);
-      gn.disconnect();
+      if (!seed?.trim()) fail('GHOSTNET_SEED is required');
+      const id = gn.loadIdentity(seed);
+      try {
+        await gn.connect();
+        await gn.send(peer, message);
+      } finally {
+        gn.disconnect();
+      }
       emit({ ok: true, sent: true, to: peer, from: id.nodeId });
       break;
     }
@@ -88,7 +108,8 @@ async function main() {
     case 'listen': {
       const gn = newClient();
       const seed = seedPhrase();
-      const id = seed ? gn.loadIdentity(seed) : gn.createIdentity();
+      if (!seed?.trim()) fail('GHOSTNET_SEED is required');
+      const id = gn.loadIdentity(seed);
       emit({ ok: true, event: 'identity', nodeId: id.nodeId });
 
       gn.on('connect', () => emit({ ok: true, event: 'connect' }));
@@ -96,9 +117,13 @@ async function main() {
       gn.on('message', (m) =>
         emit({ ok: true, event: 'message', from: m.from, data: m.data, timestamp: m.timestamp }),
       );
-      gn.on('error', (e) => emit({ ok: false, event: 'error', error: String(e?.message ?? e) }));
+      gn.on('error', (e) => fail(e?.message ?? e));
+      const stop = () => { gn.disconnect(); process.exit(130); };
+      process.once('SIGINT', stop);
+      process.once('SIGTERM', stop);
 
       await gn.connect();
+      finishDeadline();
       // The open WebSocket keeps the Node process alive; the CLI kills it on Ctrl-C.
       break;
     }
@@ -108,4 +133,4 @@ async function main() {
   }
 }
 
-main().catch((e) => fail(e?.message ?? e));
+main().then(finishDeadline).catch((e) => fail(e?.message ?? e));

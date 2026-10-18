@@ -24,7 +24,7 @@ pub fn dispatch(command: Commands) -> Result<()> {
         Commands::Config { action } => config_cmd::run(action),
         Commands::Doctor => doctor::run(),
         Commands::Status => status::run(),
-        Commands::History { limit } => history_cmd::run(limit),
+        Commands::History { limit, json } => history_cmd::run(limit, json),
         Commands::Send {
             peer,
             message,

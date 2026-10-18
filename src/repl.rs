@@ -11,10 +11,7 @@ use crate::{banner, commands};
 pub fn run() {
     banner::print_banner();
     banner::welcome();
-    println!(
-        "  {}",
-        "Type help for commands, exit to leave.".white()
-    );
+    println!("  {}", "Type help for commands, exit to leave.".white());
     println!();
 
     let stdin = io::stdin();
@@ -82,6 +79,9 @@ pub fn run() {
 
         match Cli::try_parse_from(&argv) {
             Ok(parsed) => {
+                if parsed.no_color {
+                    colored::control::set_override(false);
+                }
                 if let Some(command) = parsed.command {
                     if let Err(err) = commands::dispatch(command) {
                         eprintln!("{} {}", "error:".red().bold(), err);
@@ -90,7 +90,7 @@ pub fn run() {
             }
             Err(err) => {
                 // clap renders help text and usage errors here.
-                print!("{err}");
+                let _ = err.print();
             }
         }
         println!();

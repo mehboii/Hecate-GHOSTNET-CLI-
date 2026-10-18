@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
 use serde_json::Value;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::process::Stdio;
 
 use crate::{config, history, node};
@@ -21,11 +21,13 @@ pub fn run(seed: Option<String>, endpoint: Option<String>) -> Result<()> {
     let mut cmd = node::build_command(&args, seed.as_deref())?;
     cmd.stdout(Stdio::piped());
 
-    let mut child = cmd
-        .spawn()
-        .context("failed to launch Node.js — is it installed and on your PATH?")?;
+    let mut child = node::ChildGuard(
+        cmd.spawn()
+            .context("failed to launch Node.js — is it installed and on your PATH?")?,
+    );
 
     let stdout = child
+        .0
         .stdout
         .take()
         .ok_or_else(|| anyhow!("could not capture bridge output"))?;
@@ -33,18 +35,39 @@ pub fn run(seed: Option<String>, endpoint: Option<String>) -> Result<()> {
     println!("{}", "Listening for messages…  (Ctrl-C to stop)".bold());
     println!();
 
-    for line in BufReader::new(stdout).lines() {
-        let line = line?;
+    let mut failed = false;
+    let mut reader = BufReader::new(stdout);
+    loop {
+        let mut line = String::new();
+        if (&mut reader).take(1024 * 1024 + 1).read_line(&mut line)? == 0 {
+            break;
+        }
+        if line.len() > 1024 * 1024 {
+            anyhow::bail!("SDK listener event exceeds the 1 MiB limit");
+        }
         if line.trim().is_empty() {
             continue;
         }
         match serde_json::from_str::<Value>(&line) {
-            Ok(value) => render_event(&value),
-            Err(_) => println!("{line}"),
+            Ok(value) => {
+                if value.get("ok").and_then(Value::as_bool) != Some(true) {
+                    failed = true;
+                    eprintln!("error: SDK listener reported a failure");
+                    break;
+                }
+                render_event(&value)
+            }
+            Err(_) => anyhow::bail!("invalid JSON from SDK listener"),
         }
     }
 
-    let _ = child.wait();
+    if failed {
+        anyhow::bail!("SDK listener failed");
+    }
+    let status = child.0.wait()?;
+    if !status.success() {
+        anyhow::bail!("SDK listener failed ({status})");
+    }
     Ok(())
 }
 
@@ -66,8 +89,14 @@ fn render_event(value: &Value) {
         "message" => {
             let from = value.get("from").and_then(Value::as_str).unwrap_or("?");
             let data = value.get("data").and_then(Value::as_str).unwrap_or("");
-            println!("  {} {}", format!("{from}:").bright_magenta().bold(), data);
-            let _ = history::record("received", from, data.len(), "received");
+            println!(
+                "  {} {}",
+                format!("{}:", node::redact(from)).bright_magenta().bold(),
+                node::redact(data)
+            );
+            if let Err(error) = history::record("received", from, data.len(), "received") {
+                eprintln!("warning: could not record message metadata: {error}");
+            }
         }
         "error" => {
             let err = value
