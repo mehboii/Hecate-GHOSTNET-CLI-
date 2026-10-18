@@ -7,9 +7,17 @@ use clap::{Parser, Subcommand};
     version,
     about = "GhostNet CLI — encrypted mesh client · N11X Collective",
     long_about = None,
-    propagate_version = true
+    propagate_version = true,
+    after_help = "Examples:\n  ghostnet setup\n  ghostnet identity create --name laptop\n  ghostnet config show\n  ghostnet history --limit 10\n  ghostnet send PEER \"hello\"\n\nSet GHOSTNET_SEED for send/listen. Run without a command in a terminal for the shell."
 )]
 pub struct Cli {
+    /// Show version (alias for --version).
+    #[arg(short = 'v', action = clap::ArgAction::Version)]
+    pub version_alias: (),
+
+    /// Show the error context chain (never dumps environment variables).
+    #[arg(long, global = true)]
+    pub debug: bool,
     /// Disable colored output.
     #[arg(long, global = true)]
     pub no_color: bool,
@@ -42,6 +50,9 @@ pub enum Commands {
     History {
         #[arg(long, default_value_t = 20)]
         limit: usize,
+        /// Emit a JSON array of message metadata.
+        #[arg(long)]
+        json: bool,
     },
 
     /// Create or restore a GhostNet identity.
@@ -110,7 +121,11 @@ pub enum IdentityAction {
 #[derive(Subcommand)]
 pub enum ConfigAction {
     /// Print the current non-secret configuration.
-    Show,
+    Show {
+        /// Emit the non-secret configuration as JSON.
+        #[arg(long)]
+        json: bool,
+    },
     /// Save the default relay endpoint (must be wss://).
     SetEndpoint { endpoint: String },
     /// Clear the default endpoint and use the SDK default.

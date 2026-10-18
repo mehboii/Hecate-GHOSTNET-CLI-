@@ -9,7 +9,10 @@ pub fn run() -> Result<()> {
     println!();
 
     let dir = node::ensure_bridge_files()?;
-    println!("  bridge files → {}", dir.display().to_string().bright_black());
+    println!(
+        "  bridge files → {}",
+        dir.display().to_string().bright_black()
+    );
 
     println!(
         "  {} running {}",
@@ -18,18 +21,31 @@ pub fn run() -> Result<()> {
     );
     println!();
 
-    let status = Command::new(node::npm_bin())
-        .arg("install")
-        .current_dir(&dir)
-        .status()
-        .context("failed to launch npm — is Node.js / npm installed and on your PATH?")?;
+    let output = node::capture(
+        Command::new(node::npm_bin())
+            .args(["install", "--no-audit", "--no-fund"])
+            .env_remove("GHOSTNET_SEED")
+            .current_dir(&dir),
+        std::time::Duration::from_secs(300),
+    )
+    .context("failed to launch npm — is Node.js / npm installed and on your PATH?")?;
 
-    if !status.success() {
-        anyhow::bail!("`npm install` failed (exit status {status})");
+    if !output.status.success() {
+        anyhow::bail!(
+            "`npm install` failed ({}); check npm registry access and permissions in {}",
+            output.status,
+            dir.display()
+        );
+    }
+    if !node::bridge_installed() {
+        anyhow::bail!("npm completed without installing the SDK; check registry configuration");
     }
 
     println!();
-    println!("{}", "GhostNet SDK installed. You're ready to go.".green().bold());
+    println!(
+        "{}",
+        "GhostNet SDK installed. You're ready to go.".green().bold()
+    );
     println!("  Next: {}", "ghostnet identity create".bold());
     Ok(())
 }

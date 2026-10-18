@@ -9,11 +9,11 @@ pub fn run(
     seed: Option<String>,
     endpoint: Option<String>,
 ) -> Result<()> {
-    if message.len() > 64 * 1024 {
-        anyhow::bail!("message exceeds the 64 KiB UTF-8 limit");
-    }
-    if peer.trim().is_empty() {
-        anyhow::bail!("peer node ID cannot be empty");
+    validate_message(&message)?;
+    if peer.trim().is_empty() || peer.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        anyhow::bail!(
+            "peer node ID must be nonempty and contain no whitespace or control characters"
+        );
     }
     let seed = node::resolve_seed(seed);
     if seed.is_none() {
@@ -32,9 +32,34 @@ pub fn run(
         peer.bright_cyan()
     );
 
-    node::run_bridge_json(&args, seed.as_deref())?;
-    history::record("sent", &peer, args[2].len(), "sent")?;
+    let response = node::run_bridge_json(&args, seed.as_deref())?;
+    if response.get("sent").and_then(serde_json::Value::as_bool) != Some(true) {
+        anyhow::bail!("SDK bridge did not confirm the send operation");
+    }
+    if let Err(error) = history::record("sent", &peer, args[2].len(), "sent") {
+        eprintln!("warning: message sent, but could not record metadata: {error}");
+    }
 
     println!("{}", "Message sent.".green().bold());
     Ok(())
+}
+
+fn validate_message(message: &str) -> Result<()> {
+    if message.is_empty() {
+        anyhow::bail!("message cannot be empty");
+    }
+    if message.len() > 64 * 1024 {
+        anyhow::bail!("message exceeds the 64 KiB UTF-8 limit");
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn utf8_message_limit_is_in_bytes() {
+        assert!(super::validate_message("").is_err());
+        assert!(super::validate_message(&"é".repeat(32768)).is_ok());
+        assert!(super::validate_message(&"é".repeat(32769)).is_err());
+    }
 }

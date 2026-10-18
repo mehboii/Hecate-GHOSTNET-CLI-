@@ -90,7 +90,11 @@ fn gradient(text: &str) -> String {
     let n = chars.len();
     let mut out = String::new();
     for (i, ch) in chars.iter().enumerate() {
-        let t = if n <= 1 { 0.0 } else { i as f32 / (n - 1) as f32 };
+        let t = if n <= 1 {
+            0.0
+        } else {
+            i as f32 / (n - 1) as f32
+        };
         let r = lerp(GRAD_START.0, GRAD_END.0, t);
         let g = lerp(GRAD_START.1, GRAD_END.1, t);
         let b = lerp(GRAD_START.2, GRAD_END.2, t);

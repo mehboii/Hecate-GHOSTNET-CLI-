@@ -1,6 +1,6 @@
 [package]
 name = "ghostnet"
-version = "0.2.0"
+version = "0.2.12"
 edition = "2021"
 description = "GhostNet CLI — encrypted mesh network client by the N11X Collective"
 license = "MIT"

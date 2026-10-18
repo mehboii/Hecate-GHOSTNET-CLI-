@@ -5,7 +5,10 @@ use colored::Colorize;
 pub fn run(action: ConfigAction) -> Result<()> {
     let mut current = config::load()?;
     match action {
-        ConfigAction::Show => {
+        ConfigAction::Show { json: true } => {
+            println!("{}", serde_json::to_string_pretty(&current)?)
+        }
+        ConfigAction::Show { json: false } => {
             println!("Config file: {}", config::path()?.display());
             println!(
                 "Endpoint: {}",

@@ -6,6 +6,13 @@ use crate::cli::IdentityAction;
 use crate::{config, node};
 
 pub fn run(action: IdentityAction) -> Result<()> {
+    match &action {
+        IdentityAction::Create { name: Some(name) }
+        | IdentityAction::Load {
+            name: Some(name), ..
+        } => config::validate_label(name)?,
+        _ => {}
+    }
     // For `load`, the seed is passed to the child via env (not argv).
     let (args, seed): (Vec<String>, Option<String>) = match &action {
         IdentityAction::Create { .. } => (vec!["identity-create".to_string()], None),
@@ -25,16 +32,14 @@ pub fn run(action: IdentityAction) -> Result<()> {
     }
 
     let resp = node::run_bridge_json(&args, seed.as_deref())?;
-    let node_id = field(&resp, "nodeId");
+    let node_id = field(&resp, "nodeId")?;
 
     match action {
         IdentityAction::Create { name } => {
+            let seed_phrase = field(&resp, "seedPhrase")?;
             println!("{}", "New identity created".green().bold());
             kv("Node ID", &node_id.bright_cyan().to_string());
-            kv(
-                "Seed phrase",
-                &field(&resp, "seedPhrase").yellow().to_string(),
-            );
+            kv("Seed phrase", &seed_phrase.yellow().to_string());
             println!();
             println!(
                 "{}",
@@ -81,12 +86,13 @@ pub fn remove(name: String) -> Result<()> {
     Ok(())
 }
 
-fn field(value: &Value, key: &str) -> String {
+fn field(value: &Value, key: &str) -> Result<String> {
     value
         .get(key)
         .and_then(Value::as_str)
-        .unwrap_or("(unknown)")
-        .to_string()
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned)
+        .ok_or_else(|| anyhow::anyhow!("SDK bridge response missing {key}"))
 }
 
 fn kv(label: &str, value: &str) {

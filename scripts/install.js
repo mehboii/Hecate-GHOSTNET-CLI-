@@ -63,50 +63,43 @@ function assertAllowedUrl(rawUrl) {
 
 // Download to a temp file, following a bounded number of redirects, enforcing
 // HTTPS + host allowlist and a size ceiling. Resolves with the temp path.
-function download(rawUrl, tmpPath, redirectsLeft = MAX_REDIRECTS) {
-  return new Promise((resolve, reject) => {
-    let u;
-    try {
-      u = assertAllowedUrl(rawUrl);
-    } catch (err) {
-      return reject(err);
-    }
-
-    https
-      .get(u, { headers: { 'User-Agent': 'ghostnet-cli-installer' } }, (res) => {
-        const { statusCode, headers } = res;
-
-        if (statusCode >= 300 && statusCode < 400 && headers.location) {
-          res.resume();
-          if (redirectsLeft <= 0) {
-            return reject(new Error('too many redirects while downloading'));
-          }
-          // Resolve relative redirects against the current URL.
-          const next = new URL(headers.location, u).toString();
-          return resolve(download(next, tmpPath, redirectsLeft - 1));
-        }
-
-        if (statusCode !== 200) {
-          res.resume();
-          return reject(new Error(`download failed (HTTP ${statusCode}) for ${u.href}`));
-        }
-
-        const file = fs.createWriteStream(tmpPath, { mode: 0o755 });
-        let bytes = 0;
-        res.on('data', (chunk) => {
-          bytes += chunk.length;
-          if (bytes > MAX_BYTES) {
-            res.destroy();
-            file.destroy();
-            reject(new Error('download exceeded maximum allowed size'));
-          }
-        });
-        res.pipe(file);
-        file.on('finish', () => file.close(() => resolve(tmpPath)));
-        file.on('error', reject);
-      })
+async function download(rawUrl, tmpPath, redirectsLeft = MAX_REDIRECTS) {
+  const { Transform } = require('node:stream');
+  const { pipeline } = require('node:stream/promises');
+  const u = assertAllowedUrl(rawUrl);
+  const response = await new Promise((resolve, reject) => {
+    https.get(u, {
+      headers: { 'User-Agent': 'ghostnet-cli-installer' },
+      signal: AbortSignal.timeout(120000),
+    }, (res) => {
+      // A response may fail before the awaiting continuation starts pipeline.
+      res.on('error', reject);
+      resolve(res);
+    })
+      .setTimeout(30000, function () { this.destroy(new Error('download timed out')); })
       .on('error', reject);
   });
+  const { statusCode, headers } = response;
+  if (statusCode >= 300 && statusCode < 400 && headers.location) {
+    response.resume();
+    if (redirectsLeft <= 0) throw new Error('too many redirects while downloading');
+    return download(new URL(headers.location, u).toString(), tmpPath, redirectsLeft - 1);
+  }
+  if (statusCode !== 200) {
+    response.resume();
+    throw new Error(`download failed (HTTP ${statusCode}) for ${u.href}`);
+  }
+  let bytes = 0;
+  const limit = new Transform({
+    transform(chunk, encoding, callback) {
+      bytes += chunk.length;
+      callback(bytes > MAX_BYTES ? new Error('download exceeded maximum allowed size') : null, chunk);
+    },
+  });
+  // pipeline rejects truncated/aborted streams and waits for file close before
+  // cleanup, which also allows removal on Windows. Never follow a temp symlink.
+  await pipeline(response, limit, fs.createWriteStream(tmpPath, { mode: 0o755, flags: 'wx' }));
+  return tmpPath;
 }
 
 function sha256(filePath) {
@@ -160,7 +153,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
+module.exports = { assertAllowedUrl, resolveAsset, sha256, download };
+
+if (require.main === module) main().catch((err) => {
   console.error(`GhostNet CLI install failed: ${err.message}`);
   process.exit(1);
 });

@@ -8,7 +8,7 @@
 // whenever the binaries change (i.e. every release) and committed before publish.
 
 import { createHash } from 'node:crypto';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -22,7 +22,7 @@ const ASSETS = [
   'ghostnet-darwin-arm64',
 ];
 
-const pkg = (await import('../package.json', { with: { type: 'json' } })).default;
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const tag = process.argv[2] || `v${pkg.version}`;
 
 async function hashAsset(asset) {
