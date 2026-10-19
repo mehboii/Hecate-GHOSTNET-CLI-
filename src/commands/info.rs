@@ -6,8 +6,8 @@ use crate::node;
 pub fn run() -> Result<()> {
     println!("{}", "About".bold().underline());
     row("CLI version", env!("CARGO_PKG_VERSION"));
-    row("SDK package", "@n11x/ghostnet-sdk");
-    row("Install", "npm install @n11x/ghostnet-sdk");
+    row("SDK package", "@n11x/atlas");
+    row("Verified API", "0.2.0");
     row("Maintainer", "N11X Collective");
     println!();
 

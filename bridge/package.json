@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Node bridge that lets Hecate drive @n11x/ghostnet-sdk",
-  "dependencies": {}
+  "description": "Node bridge that lets Hecate drive @n11x/atlas",
+  "dependencies": {
+    "@n11x/atlas": "0.2.0"
+  }
 }

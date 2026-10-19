@@ -15,6 +15,7 @@ pub fn run(action: ConfigAction) -> Result<()> {
                 current.endpoint.as_deref().unwrap_or("SDK default")
             );
             println!("Public identity labels: {}", current.identities.len());
+            println!("Trusted peers: {}", current.trusted_peers.len());
         }
         ConfigAction::SetEndpoint { endpoint } => {
             config::validate_endpoint(&endpoint)?;

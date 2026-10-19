@@ -1,4 +1,4 @@
-//! Locating and invoking the bundled Node bridge that wraps @n11x/ghostnet-sdk.
+//! Locating and invoking the bundled Node bridge that wraps @n11x/atlas.
 
 use anyhow::{anyhow, Context, Result};
 use serde_json::Value;
@@ -44,7 +44,7 @@ pub fn bridge_installed() -> bool {
             d.join("ghostnet-bridge.mjs").is_file()
                 && d.join("node_modules")
                     .join("@n11x")
-                    .join("ghostnet-sdk")
+                    .join("atlas")
                     .join("package.json")
                     .is_file()
         })

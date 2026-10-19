@@ -30,12 +30,14 @@ pub fn run(action: IdentityAction) -> Result<()> {
 
     let resp = node::run_bridge_json(&args, seed.as_deref())?;
     let node_id = field(&resp, "nodeId")?;
+    let public_key = field(&resp, "publicKey")?;
 
     match action {
         IdentityAction::Create { name } => {
             let seed_phrase = field(&resp, "seedPhrase")?;
             println!("{}", "New identity created".green().bold());
             kv("Node ID", &node_id.bright_cyan().to_string());
+            kv("Public key", &public_key.bright_cyan().to_string());
             kv("Seed phrase", &seed_phrase.yellow().to_string());
             println!();
             println!(
@@ -50,6 +52,7 @@ pub fn run(action: IdentityAction) -> Result<()> {
         IdentityAction::Load { name, .. } => {
             println!("{}", "Identity restored ✓".green().bold());
             kv("Node ID", &node_id.bright_cyan().to_string());
+            kv("Public key", &public_key.bright_cyan().to_string());
             if let Some(name) = name {
                 config::label(name.clone(), node_id.clone())?;
                 println!("  {} saved public label {}", "✓".green(), name);

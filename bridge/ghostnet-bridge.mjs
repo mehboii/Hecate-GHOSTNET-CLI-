@@ -8,10 +8,11 @@
 // Commands:
 //   identity-create
 //   identity-load
-//   send <peerId> <message> [--endpoint <wss-url>]
+//   peer-from-key <publicKey>
+//   send <peerId> <message> <publicKey> [--endpoint <wss-url>]
 //   listen [--endpoint <wss-url>]
 
-import { GhostNet } from '@n11x/ghostnet-sdk';
+import { Atlas } from '@n11x/atlas';
 
 function emit(obj) {
   process.stdout.write(JSON.stringify(obj) + '\n');
@@ -32,7 +33,7 @@ const flags = {};
 const positional = [];
 // Fixed positional arity prevents message text such as "--endpoint" from
 // being interpreted as an option. Rust passes options after positionals.
-const arity = cmd === 'send' ? 2 : 0;
+const arity = cmd === 'send' ? 3 : cmd === 'peer-from-key' ? 1 : 0;
 for (let i = 0; i < rest.length; i++) {
   const arg = rest[i];
   if (positional.length < arity) {
@@ -58,7 +59,7 @@ function seedPhrase() {
 
 function newClient() {
   // Passing `endpoint: undefined` falls back to the SDK default.
-  return new GhostNet(flags.endpoint ? { endpoint: flags.endpoint } : {});
+  return new Atlas(flags.endpoint ? { endpoint: flags.endpoint } : {});
 }
 
 async function main() {
@@ -66,7 +67,7 @@ async function main() {
     case 'identity-create': {
       const gn = newClient();
       const id = gn.createIdentity();
-      emit({ ok: true, nodeId: id.nodeId, seedPhrase: id.seedPhrase });
+      emit({ ok: true, nodeId: id.nodeId, publicKey: id.publicKey, seedPhrase: id.seedPhrase });
       break;
     }
 
@@ -75,20 +76,31 @@ async function main() {
       if (!seed) fail('a 12-word seed phrase is required');
       const gn = newClient();
       const id = gn.loadIdentity(seed);
-      emit({ ok: true, nodeId: id.nodeId });
+      emit({ ok: true, nodeId: id.nodeId, publicKey: id.publicKey });
+      break;
+    }
+
+    case 'peer-from-key': {
+      const publicKey = positional[0];
+      if (!publicKey) fail('usage: peer-from-key <publicKey>');
+      const peer = newClient().addPeer(publicKey);
+      emit({ ok: true, nodeId: peer.nodeId, publicKey: peer.publicKey });
       break;
     }
 
     case 'send': {
       const peer = positional[0];
       const message = positional[1];
-      if (!peer?.trim() || !message) fail('usage: send <peerId> <message> [--endpoint <wss-url>]');
+      const publicKey = positional[2];
+      if (!peer?.trim() || !message || !publicKey) fail('usage: send <peerId> <message> <publicKey> [--endpoint <wss-url>]');
       if (Buffer.byteLength(message, 'utf8') > 64 * 1024) fail('message exceeds the 64 KiB UTF-8 limit');
 
       const gn = newClient();
       const seed = seedPhrase();
       if (!seed?.trim()) fail('GHOSTNET_SEED is required');
       const id = gn.loadIdentity(seed);
+      const trustedPeer = gn.addPeer(publicKey);
+      if (trustedPeer.nodeId !== peer) fail('trusted peer public key does not match the requested node ID');
       try {
         await gn.connect();
         await gn.send(peer, message);
@@ -104,7 +116,7 @@ async function main() {
       const seed = seedPhrase();
       if (!seed?.trim()) fail('GHOSTNET_SEED is required');
       const id = gn.loadIdentity(seed);
-      emit({ ok: true, event: 'identity', nodeId: id.nodeId });
+      emit({ ok: true, event: 'identity', nodeId: id.nodeId, publicKey: id.publicKey });
 
       gn.on('connect', () => emit({ ok: true, event: 'connect' }));
       gn.on('disconnect', (reason) => emit({ ok: true, event: 'disconnect', reason: String(reason ?? '') }));

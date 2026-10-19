@@ -13,11 +13,20 @@ pub struct Config {
     pub endpoint: Option<String>,
     #[serde(default)]
     pub identities: BTreeMap<String, IdentityLabel>,
+    #[serde(default)]
+    pub trusted_peers: BTreeMap<String, TrustedPeer>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IdentityLabel {
     pub node_id: String,
+    pub created_at: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TrustedPeer {
+    pub node_id: String,
+    pub public_key: String,
     pub created_at: u64,
 }
 fn config_version() -> u8 {
@@ -30,6 +39,7 @@ impl Default for Config {
             version: 1,
             endpoint: None,
             identities: BTreeMap::new(),
+            trusted_peers: BTreeMap::new(),
         }
     }
 }
@@ -48,6 +58,11 @@ impl Config {
         }
         for name in self.identities.keys() {
             validate_label(name)?;
+        }
+        for (name, peer) in &self.trusted_peers {
+            validate_label(name)?;
+            validate_node_id(&peer.node_id)?;
+            validate_public_key(&peer.public_key)?;
         }
         Ok(())
     }
@@ -173,9 +188,56 @@ fn valid_port_suffix(value: &str) -> bool {
 
 pub fn validate_label(name: &str) -> Result<()> {
     if name.trim().is_empty() || name.chars().any(char::is_control) {
-        anyhow::bail!("identity label must be nonempty and contain no control characters");
+        anyhow::bail!("label must be nonempty and contain no control characters");
     }
     Ok(())
+}
+
+pub fn validate_node_id(node_id: &str) -> Result<()> {
+    if node_id.len() != 66
+        || !node_id.starts_with("0x")
+        || !node_id[2..]
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        anyhow::bail!("peer node ID must be 0x followed by 64 lowercase hex characters");
+    }
+    Ok(())
+}
+
+pub fn validate_public_key(public_key: &str) -> Result<()> {
+    if public_key.len() != 64
+        || !public_key
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        anyhow::bail!("peer public key must be 64 lowercase hex characters");
+    }
+    Ok(())
+}
+
+pub fn trusted_peer(recipient: &str) -> Result<TrustedPeer> {
+    let config = load()?;
+    if validate_node_id(recipient).is_ok() {
+        let mut matches = config
+            .trusted_peers
+            .values()
+            .filter(|peer| peer.node_id == recipient);
+        let peer = matches.next().cloned().ok_or_else(|| {
+            anyhow!(
+                "peer {recipient:?} is not trusted; register its verified node ID and public key with `hecate peer add`"
+            )
+        })?;
+        if matches.next().is_some() {
+            anyhow::bail!("multiple trusted peer records use node ID {recipient}");
+        }
+        return Ok(peer);
+    }
+    config.trusted_peers.get(recipient).cloned().ok_or_else(|| {
+        anyhow!(
+            "peer {recipient:?} is not trusted; register its verified node ID and public key with `hecate peer add`"
+        )
+    })
 }
 pub fn unix_time() -> u64 {
     std::time::SystemTime::now()
@@ -197,7 +259,7 @@ pub fn label(name: String, node_id: String) -> Result<()> {
 }
 #[cfg(test)]
 mod tests {
-    use super::validate_endpoint;
+    use super::{validate_endpoint, validate_node_id, validate_public_key};
     #[test]
     fn only_secure_endpoints_are_accepted() {
         assert!(validate_endpoint("wss://relay.example/path").is_ok());
@@ -222,5 +284,17 @@ mod tests {
         ] {
             assert!(validate_endpoint(endpoint).is_err(), "{endpoint}");
         }
+    }
+
+    #[test]
+    fn trusted_peer_identifiers_are_strict_lowercase_hex() {
+        let node_id = format!("0x{}", "ab".repeat(32));
+        let public_key = "cd".repeat(32);
+        assert!(validate_node_id(&node_id).is_ok());
+        assert!(validate_public_key(&public_key).is_ok());
+        assert!(validate_node_id(&node_id.to_uppercase()).is_err());
+        assert!(validate_node_id("0x1234").is_err());
+        assert!(validate_public_key(&public_key.to_uppercase()).is_err());
+        assert!(validate_public_key("not-a-key").is_err());
     }
 }

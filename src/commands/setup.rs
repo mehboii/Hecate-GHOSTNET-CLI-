@@ -18,7 +18,7 @@ pub fn run(sdk_version: String) -> Result<()> {
     println!(
         "  {} running {}",
         "→".cyan(),
-        format!("npm install @n11x/ghostnet-sdk@{sdk_version}").bold()
+        format!("npm install @n11x/atlas@{sdk_version}").bold()
     );
     println!();
 
@@ -59,33 +59,21 @@ fn npm_install_args(version: &str) -> [String; 6] {
         "--ignore-scripts".into(),
         "--no-audit".into(),
         "--no-fund".into(),
-        format!("@n11x/ghostnet-sdk@{version}"),
+        format!("@n11x/atlas@{version}"),
     ]
 }
 
 fn validate_sdk_version(version: &str) -> Result<()> {
-    let split = version.split_once('-');
-    let (core, prerelease) = split.unwrap_or((version, ""));
-    let valid_core = core.split('.').count() == 3
-        && core
-            .split('.')
-            .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_digit()));
-    let valid_prerelease = split.is_none()
-        || (!prerelease.is_empty()
-            && prerelease
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-'));
-    if !valid_core || !valid_prerelease {
-        anyhow::bail!("SDK version must be an exact semantic version such as 1.2.3");
-    }
-    Ok(())
+    semver::Version::parse(version)
+        .map(|_| ())
+        .map_err(|_| anyhow::anyhow!("SDK version must be an exact semantic version such as 1.2.3"))
 }
 
 #[cfg(test)]
 mod tests {
     #[test]
     fn sdk_version_must_be_exact() {
-        for valid in ["1.2.3", "0.1.0-beta.1"] {
+        for valid in ["1.2.3", "0.1.0-beta.1", "1.2.3+build.7"] {
             assert!(super::validate_sdk_version(valid).is_ok(), "{valid}");
         }
         for invalid in [
@@ -93,6 +81,8 @@ mod tests {
             "^1.2.3",
             "1.2",
             "1.2.3-",
+            "01.2.3",
+            "1.2.3-alpha..1",
             "1.2.3 || evil",
             "file:../sdk",
         ] {
@@ -105,7 +95,7 @@ mod tests {
         let args = super::npm_install_args("1.2.3");
         assert!(args.iter().any(|arg| arg == "--save-exact"));
         assert!(args.iter().any(|arg| arg == "--ignore-scripts"));
-        assert_eq!(args.last().unwrap(), "@n11x/ghostnet-sdk@1.2.3");
+        assert_eq!(args.last().unwrap(), "@n11x/atlas@1.2.3");
         assert!(!args.iter().any(|arg| arg == "latest"));
     }
 }

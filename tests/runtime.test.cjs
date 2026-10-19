@@ -26,15 +26,19 @@ test('embedded bridge protocol preserves flag-like messages, requires seed and d
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ghostnet-bridge-'));
   try {
     fs.copyFileSync(path.join(__dirname, '../bridge/ghostnet-bridge.mjs'), path.join(dir, 'bridge.mjs'));
-    const sdk = path.join(dir, 'node_modules/@n11x/ghostnet-sdk');
+    const sdk = path.join(dir, 'node_modules/@n11x/atlas');
     fs.mkdirSync(sdk, { recursive: true });
     fs.writeFileSync(path.join(sdk, 'package.json'), JSON.stringify({ type: 'module', exports: './index.js' }));
     fs.writeFileSync(path.join(sdk, 'index.js'), `
       import fs from 'node:fs';
-      export class GhostNet {
+      export class Atlas {
         constructor(options) { fs.writeFileSync('options.json', JSON.stringify(options)); }
-        createIdentity() { return {nodeId:'public-id',seedPhrase:'fixture seed'}; }
-        loadIdentity(seed) { if(seed === 'bad seed') throw new Error('invalid: '+seed); return {nodeId:'public-id'}; }
+        createIdentity() { return {nodeId:'public-id',publicKey:'public-key',seedPhrase:'fixture seed'}; }
+        loadIdentity(seed) { if(seed === 'bad seed') throw new Error('invalid: '+seed); return {nodeId:'public-id',publicKey:'public-key'}; }
+        addPeer(publicKey) {
+          if(!/^[0-9a-f]{64}$/.test(publicKey)) throw new Error('invalid peer public key');
+          return {nodeId:'0x'+'a'.repeat(64),publicKey};
+        }
         async connect() { if(process.env.TEST_HANG) await new Promise(()=>{}); }
         async send(peer, message) { fs.writeFileSync('message.txt', message); if(message === 'fail') throw new Error('send failed'); }
         disconnect() { fs.writeFileSync('disconnected', 'yes'); }
@@ -45,17 +49,19 @@ test('embedded bridge protocol preserves flag-like messages, requires seed and d
       cwd: dir, encoding: 'utf8', timeout: 5000,
       env: { ...process.env, GHOSTNET_SEED: 'fixture seed', GHOSTNET_TIMEOUT_SECS: '2', ...env },
     });
-    let result = run(['send', 'peer', '--endpoint', '--endpoint', 'wss://relay.example']);
+    const peerId = '0x' + 'a'.repeat(64);
+    const publicKey = 'b'.repeat(64);
+    let result = run(['send', peerId, '--endpoint', publicKey, '--endpoint', 'wss://relay.example']);
     assert.equal(result.status, 0, result.stderr + result.stdout);
     assert.equal(fs.readFileSync(path.join(dir, 'message.txt'), 'utf8'), '--endpoint');
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'options.json'))), { endpoint: 'wss://relay.example' });
     assert.equal(JSON.parse(result.stdout).sent, true);
-    for (const args of [['send', 'peer', 'hello'], ['listen']]) {
+    for (const args of [['send', peerId, 'hello', publicKey], ['listen']]) {
       result = run(args, { GHOSTNET_SEED: '' });
       assert.equal(result.status, 1);
       assert.match(result.stdout, /GHOSTNET_SEED is required/);
     }
-    result = run(['send', 'peer', 'fail']);
+    result = run(['send', peerId, 'fail', publicKey]);
     assert.equal(result.status, 1);
     assert.equal(fs.readFileSync(path.join(dir, 'disconnected'), 'utf8'), 'yes');
     result = run(['identity-load'], { GHOSTNET_SEED: 'bad seed' });
@@ -65,9 +71,18 @@ test('embedded bridge protocol preserves flag-like messages, requires seed and d
     result = run(['listen'], { TEST_HANG: '1', GHOSTNET_TIMEOUT_SECS: '1' });
     assert.equal(result.status, 1);
     assert.match(result.stdout, /timed out/);
-    result = run(['send', 'peer', 'hello', '--endpoint']);
+    result = run(['send', peerId, 'hello', publicKey, '--endpoint']);
     assert.equal(result.status, 1);
     assert.match(result.stdout, /missing value/);
+    result = run(['send', '0x' + 'c'.repeat(64), 'hello', publicKey]);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /does not match/);
+    result = run(['peer-from-key', 'not-a-key']);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /invalid peer public key/);
+    result = run(['peer-from-key', publicKey]);
+    assert.equal(result.status, 0);
+    assert.equal(JSON.parse(result.stdout).nodeId, peerId);
     result = run(['identity-create']);
     assert.equal(result.status, 0);
     assert.equal(JSON.parse(result.stdout).nodeId, 'public-id');

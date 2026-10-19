@@ -98,7 +98,7 @@ pub fn run() {
 }
 
 /// Split a line into arguments, honoring single and double quotes so messages
-/// and seed phrases with spaces work: `send 0xabc "hello world"`.
+/// and messages with spaces work: `send alice "hello world"`.
 fn tokenize(input: &str) -> Result<Vec<String>, String> {
     let mut tokens = Vec::new();
     let mut current = String::new();
