@@ -36,7 +36,7 @@ impl Sandbox {
     }
     fn fixture(&self, script: &str) {
         let bridge = self.0.join("bridge");
-        let sdk = bridge.join("node_modules/@n11x/ghostnet-sdk");
+        let sdk = bridge.join("node_modules/@n11x/atlas");
         std::fs::create_dir_all(&sdk).unwrap();
         std::fs::write(sdk.join("package.json"), "{}").unwrap();
         std::fs::write(bridge.join("ghostnet-bridge.mjs"), script).unwrap();
@@ -238,9 +238,14 @@ fn missing_runtime_and_invalid_inputs_fail_without_success() {
 #[test]
 fn real_child_protocol_exit_status_timeout_and_endpoint_precedence() {
     let s = Sandbox::new();
+    let peer_id = format!("0x{}", "a".repeat(64));
+    let public_key = "b".repeat(64);
+    s.config(&format!(
+        r#"{{"trusted_peers":{{"test-peer":{{"node_id":"{peer_id}","public_key":"{public_key}","created_at":1}}}}}}"#
+    ));
     s.fixture("console.log(JSON.stringify({ok:true,sent:true}));process.exitCode=7;");
     let o = s
-        .command(&["send", "peer", "hi"])
+        .command(&["send", "test-peer", "hi"])
         .env("GHOSTNET_SEED", "test seed")
         .output()
         .unwrap();
@@ -254,7 +259,7 @@ fn real_child_protocol_exit_status_timeout_and_endpoint_precedence() {
     ] {
         s.fixture(script);
         let o = s
-            .command(&["send", "peer", "hi"])
+            .command(&["send", "test-peer", "hi"])
             .env("GHOSTNET_SEED", "test seed")
             .output()
             .unwrap();
@@ -271,7 +276,7 @@ fn real_child_protocol_exit_status_timeout_and_endpoint_precedence() {
     s.fixture("setInterval(()=>{},1000)");
     let start = std::time::Instant::now();
     let o = s
-        .command(&["send", "peer", "hi"])
+        .command(&["send", "test-peer", "hi"])
         .env("GHOSTNET_SEED", "test seed")
         .env("GHOSTNET_TIMEOUT_SECS", "1")
         .output()
@@ -280,7 +285,7 @@ fn real_child_protocol_exit_status_timeout_and_endpoint_precedence() {
     assert!(stderr(&o).contains("timed out"));
     assert!(start.elapsed().as_secs() < 10);
     s.fixture("import fs from 'node:fs';fs.writeFileSync('args.json',JSON.stringify({args:process.argv.slice(2),seed:process.env.GHOSTNET_SEED}));console.log(JSON.stringify({ok:true,sent:true}));");
-    s.config(r#"{"endpoint":"wss://saved.example"}"#);
+    s.config(&format!(r#"{{"endpoint":"wss://saved.example","trusted_peers":{{"test-peer":{{"node_id":"{peer_id}","public_key":"{public_key}","created_at":1}}}}}}"#));
     for (extra, expected) in [
         (vec![], "wss://saved.example"),
         (
@@ -288,7 +293,7 @@ fn real_child_protocol_exit_status_timeout_and_endpoint_precedence() {
             "wss://explicit.example",
         ),
     ] {
-        let mut args = vec!["send", "peer", "hello"];
+        let mut args = vec!["send", "test-peer", "hello"];
         args.extend(extra);
         let o = s
             .command(&args)
@@ -299,12 +304,57 @@ fn real_child_protocol_exit_status_timeout_and_endpoint_precedence() {
         let invoked: serde_json::Value =
             serde_json::from_slice(&std::fs::read(s.0.join("bridge/args.json")).unwrap()).unwrap();
         assert_eq!(invoked["seed"], "environment seed");
-        assert_eq!(invoked["args"][4], expected);
+        assert_eq!(invoked["args"][5], expected);
+        assert_eq!(invoked["args"][1], peer_id);
+        assert_eq!(invoked["args"][3], public_key);
         assert!(!invoked["args"].to_string().contains("seed"));
     }
     let history = std::fs::read_to_string(s.0.join("history.ndjson")).unwrap();
     assert!(!history.contains("hello"));
     assert!(!history.contains("seed"));
+}
+
+#[test]
+fn trusted_peer_registration_rejects_bad_or_mismatched_keys() {
+    let s = Sandbox::new();
+    let node_id = format!("0x{}", "a".repeat(64));
+    let other_node_id = format!("0x{}", "c".repeat(64));
+    let public_key = "b".repeat(64);
+    s.fixture(&format!(
+        "console.log(JSON.stringify({{ok:true,nodeId:'{node_id}',publicKey:process.argv[3]}}));"
+    ));
+
+    for args in [
+        vec!["peer", "add", "alice", "not-a-node", &public_key],
+        vec!["peer", "add", "alice", &node_id, "not-a-key"],
+    ] {
+        let o = s.run(&args);
+        assert_eq!(o.status.code(), Some(1), "{args:?}: {}", stderr(&o));
+    }
+    let o = s.run(&["peer", "add", "alice", &other_node_id, &public_key]);
+    assert_eq!(o.status.code(), Some(1));
+    assert!(stderr(&o).contains("peer was not trusted"));
+    assert!(!s.0.join("config.json").exists());
+
+    let o = s.run(&["peer", "add", "alice", &node_id, &public_key]);
+    assert!(o.status.success(), "{}", stderr(&o));
+    let config: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(s.0.join("config.json")).unwrap()).unwrap();
+    assert_eq!(config["trusted_peers"]["alice"]["node_id"], node_id);
+    assert_eq!(config["trusted_peers"]["alice"]["public_key"], public_key);
+
+    let replacement_key = "d".repeat(64);
+    let o = s.run(&["peer", "add", "alice", &node_id, &replacement_key]);
+    assert_eq!(o.status.code(), Some(1));
+    assert!(stderr(&o).contains("remove it explicitly"));
+
+    let o = s
+        .command(&["send", "unknown", "hello"])
+        .env("GHOSTNET_SEED", "environment seed")
+        .output()
+        .unwrap();
+    assert_eq!(o.status.code(), Some(1));
+    assert!(stderr(&o).contains("is not trusted"));
 }
 
 #[test]

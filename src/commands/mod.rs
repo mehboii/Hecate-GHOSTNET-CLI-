@@ -4,6 +4,7 @@ pub mod history_cmd;
 pub mod identity;
 pub mod info;
 pub mod listen;
+pub mod peer;
 pub mod send;
 pub mod setup;
 pub mod status;
@@ -21,6 +22,7 @@ pub fn dispatch(command: Commands) -> Result<()> {
             crate::cli::IdentityAction::Remove { name } => identity::remove(name),
             action => identity::run(action),
         },
+        Commands::Peer { action } => peer::run(action),
         Commands::Config { action } => config_cmd::run(action),
         Commands::Doctor => doctor::run(),
         Commands::Status => status::run(),
