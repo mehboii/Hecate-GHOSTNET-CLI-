@@ -6,10 +6,10 @@ use std::process::Stdio;
 
 use crate::{config, history, node};
 
-pub fn run(seed: Option<String>, endpoint: Option<String>) -> Result<()> {
-    let seed = node::resolve_seed(seed);
+pub fn run(endpoint: Option<String>) -> Result<()> {
+    let seed = node::resolve_seed();
     if seed.is_none() {
-        anyhow::bail!("an identity is required: set GHOSTNET_SEED or pass --seed; refusing to listen as an unreachable temporary identity");
+        anyhow::bail!("an identity is required: set GHOSTNET_SEED; refusing to listen as an unreachable temporary identity");
     }
     let endpoint = config::endpoint(endpoint)?;
     let mut args = vec!["listen".to_string()];

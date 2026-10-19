@@ -67,6 +67,7 @@ fn help_version_and_usage_exit_codes() {
         let o = s.run(&args);
         assert!(o.status.success(), "{}", stderr(&o));
         assert!(stdout(&o).contains("Usage:"));
+        assert!(!stdout(&o).contains("--seed"));
     }
     for flag in ["--version", "-v"] {
         let o = s.run(&[flag]);
@@ -83,12 +84,16 @@ fn help_version_and_usage_exit_codes() {
         vec!["listen", "--endpoint"],
         vec!["history", "--limit", "abc"],
         vec!["info", "--unknown"],
+        vec!["setup"],
     ] {
         let o = s.run(&args);
         assert_eq!(o.status.code(), Some(2), "{args:?}: {}", stderr(&o));
         assert!(stderr(&o).contains("error:"));
         assert!(o.stdout.is_empty());
     }
+    let o = s.run(&["setup", "--sdk-version", "latest"]);
+    assert_eq!(o.status.code(), Some(1));
+    assert!(stderr(&o).contains("exact semantic version"));
 }
 
 #[test]
@@ -215,11 +220,14 @@ fn missing_runtime_and_invalid_inputs_fail_without_success() {
         .unwrap();
     assert_eq!(o.status.code(), Some(1));
     assert!(stderr(&o).contains("diagnostic checks failed"));
-    let o = s
-        .command(&["send", "peer", "hi", "--seed", " "])
-        .output()
-        .unwrap();
-    assert!(stderr(&o).contains("identity is required"));
+    for args in [
+        vec!["send", "peer", "hi", "--seed", "secret"],
+        vec!["listen", "--seed", "secret"],
+        vec!["identity", "load", "secret"],
+    ] {
+        let o = s.run(&args);
+        assert_eq!(o.status.code(), Some(2), "{args:?}: {}", stderr(&o));
+    }
     let large = "é".repeat(32769);
     // Windows argv has a smaller limit: validate the byte boundary at unit level instead.
     if !cfg!(windows) {
@@ -280,7 +288,7 @@ fn real_child_protocol_exit_status_timeout_and_endpoint_precedence() {
             "wss://explicit.example",
         ),
     ] {
-        let mut args = vec!["send", "peer", "hello", "--seed", "explicit seed"];
+        let mut args = vec!["send", "peer", "hello"];
         args.extend(extra);
         let o = s
             .command(&args)
@@ -290,7 +298,7 @@ fn real_child_protocol_exit_status_timeout_and_endpoint_precedence() {
         assert!(o.status.success(), "{}", stderr(&o));
         let invoked: serde_json::Value =
             serde_json::from_slice(&std::fs::read(s.0.join("bridge/args.json")).unwrap()).unwrap();
-        assert_eq!(invoked["seed"], "explicit seed");
+        assert_eq!(invoked["seed"], "environment seed");
         assert_eq!(invoked["args"][4], expected);
         assert!(!invoked["args"].to_string().contains("seed"));
     }

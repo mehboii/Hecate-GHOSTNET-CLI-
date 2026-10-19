@@ -4,7 +4,8 @@ use std::process::Command;
 
 use crate::node;
 
-pub fn run() -> Result<()> {
+pub fn run(sdk_version: String) -> Result<()> {
+    validate_sdk_version(&sdk_version)?;
     println!("{}", "Setting up the GhostNet SDK bridge…".bold());
     println!();
 
@@ -17,13 +18,14 @@ pub fn run() -> Result<()> {
     println!(
         "  {} running {}",
         "→".cyan(),
-        "npm install @n11x/ghostnet-sdk".bold()
+        format!("npm install @n11x/ghostnet-sdk@{sdk_version}").bold()
     );
     println!();
 
+    let install_args = npm_install_args(&sdk_version);
     let output = node::capture(
         Command::new(node::npm_bin())
-            .args(["install", "--no-audit", "--no-fund"])
+            .args(&install_args)
             .env_remove("GHOSTNET_SEED")
             .current_dir(&dir),
         std::time::Duration::from_secs(300),
@@ -48,4 +50,62 @@ pub fn run() -> Result<()> {
     );
     println!("  Next: {}", "hecate identity create".bold());
     Ok(())
+}
+
+fn npm_install_args(version: &str) -> [String; 6] {
+    [
+        "install".into(),
+        "--save-exact".into(),
+        "--ignore-scripts".into(),
+        "--no-audit".into(),
+        "--no-fund".into(),
+        format!("@n11x/ghostnet-sdk@{version}"),
+    ]
+}
+
+fn validate_sdk_version(version: &str) -> Result<()> {
+    let split = version.split_once('-');
+    let (core, prerelease) = split.unwrap_or((version, ""));
+    let valid_core = core.split('.').count() == 3
+        && core
+            .split('.')
+            .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_digit()));
+    let valid_prerelease = split.is_none()
+        || (!prerelease.is_empty()
+            && prerelease
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-'));
+    if !valid_core || !valid_prerelease {
+        anyhow::bail!("SDK version must be an exact semantic version such as 1.2.3");
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn sdk_version_must_be_exact() {
+        for valid in ["1.2.3", "0.1.0-beta.1"] {
+            assert!(super::validate_sdk_version(valid).is_ok(), "{valid}");
+        }
+        for invalid in [
+            "latest",
+            "^1.2.3",
+            "1.2",
+            "1.2.3-",
+            "1.2.3 || evil",
+            "file:../sdk",
+        ] {
+            assert!(super::validate_sdk_version(invalid).is_err(), "{invalid}");
+        }
+    }
+
+    #[test]
+    fn npm_install_is_exact_and_disables_lifecycle_scripts() {
+        let args = super::npm_install_args("1.2.3");
+        assert!(args.iter().any(|arg| arg == "--save-exact"));
+        assert!(args.iter().any(|arg| arg == "--ignore-scripts"));
+        assert_eq!(args.last().unwrap(), "@n11x/ghostnet-sdk@1.2.3");
+        assert!(!args.iter().any(|arg| arg == "latest"));
+    }
 }

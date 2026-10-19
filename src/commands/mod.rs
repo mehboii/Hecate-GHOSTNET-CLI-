@@ -14,7 +14,7 @@ use anyhow::Result;
 /// Run a single parsed command. Shared by one-shot mode and the interactive shell.
 pub fn dispatch(command: Commands) -> Result<()> {
     match command {
-        Commands::Setup => setup::run(),
+        Commands::Setup { sdk_version } => setup::run(sdk_version),
         Commands::Info => info::run(),
         Commands::Identity { action } => match action {
             crate::cli::IdentityAction::List => identity::list(),
@@ -28,9 +28,8 @@ pub fn dispatch(command: Commands) -> Result<()> {
         Commands::Send {
             peer,
             message,
-            seed,
             endpoint,
-        } => send::run(peer, message, seed, endpoint),
-        Commands::Listen { seed, endpoint } => listen::run(seed, endpoint),
+        } => send::run(peer, message, endpoint),
+        Commands::Listen { endpoint } => listen::run(endpoint),
     }
 }

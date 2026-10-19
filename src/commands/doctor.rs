@@ -35,7 +35,7 @@ pub fn run() -> Result<()> {
         if node::bridge_installed() {
             "✓"
         } else {
-            "✗ (run `hecate setup`)"
+            "✗ (run `hecate setup --sdk-version VERSION`)"
         }
     );
     let config_ok = config::load().is_ok();
@@ -44,7 +44,7 @@ pub fn run() -> Result<()> {
         Err(error) => println!("✗ configuration: {error}"),
     }
     if !node_ok || !npm_ok || !node::bridge_installed() || !config_ok {
-        anyhow::bail!("diagnostic checks failed; check Node.js/npm, repair configuration, and run `hecate setup`");
+        anyhow::bail!("diagnostic checks failed; check Node.js/npm, repair configuration, and run `hecate setup --sdk-version VERSION`");
     }
     Ok(())
 }

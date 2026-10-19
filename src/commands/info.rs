@@ -14,7 +14,9 @@ pub fn run() -> Result<()> {
     let bridge_status = if node::bridge_installed() {
         "installed".green().to_string()
     } else {
-        "not installed — run `hecate setup`".yellow().to_string()
+        "not installed — run `hecate setup --sdk-version VERSION`"
+            .yellow()
+            .to_string()
     };
     row("SDK bridge", &bridge_status);
 

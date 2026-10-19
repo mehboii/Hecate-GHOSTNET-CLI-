@@ -65,27 +65,22 @@ fn require_ready() -> Result<PathBuf> {
     let script = bridge_script()?;
     if !script.exists() {
         return Err(anyhow!(
-            "the GhostNet SDK bridge isn't set up yet — run `hecate setup` first"
+            "the GhostNet SDK bridge isn't set up yet — run `hecate setup --sdk-version VERSION` first"
         ));
     }
     if !bridge_installed() {
         return Err(anyhow!(
-            "the GhostNet SDK isn't installed yet — run `hecate setup` first"
+            "the GhostNet SDK isn't installed yet — run `hecate setup --sdk-version VERSION` first"
         ));
     }
     Ok(script)
 }
 
-/// Resolve a seed phrase from an explicit value, falling back to the
-/// `GHOSTNET_SEED` environment variable. Lets callers keep the secret out of
-/// the command line (and shell history) entirely.
-pub fn resolve_seed(explicit: Option<String>) -> Option<String> {
-    explicit
-        .or_else(|| {
-            std::env::var("GHOSTNET_SEED")
-                .ok()
-                .filter(|s| !s.trim().is_empty())
-        })
+/// Resolve a seed phrase exclusively from `GHOSTNET_SEED`, keeping the secret
+/// out of the command line and shell history.
+pub fn resolve_seed() -> Option<String> {
+    std::env::var("GHOSTNET_SEED")
+        .ok()
         .filter(|s| !s.trim().is_empty())
 }
 

@@ -3,21 +3,16 @@ use colored::Colorize;
 
 use crate::{config, history, node};
 
-pub fn run(
-    peer: String,
-    message: String,
-    seed: Option<String>,
-    endpoint: Option<String>,
-) -> Result<()> {
+pub fn run(peer: String, message: String, endpoint: Option<String>) -> Result<()> {
     validate_message(&message)?;
     if peer.trim().is_empty() || peer.chars().any(|c| c.is_whitespace() || c.is_control()) {
         anyhow::bail!(
             "peer node ID must be nonempty and contain no whitespace or control characters"
         );
     }
-    let seed = node::resolve_seed(seed);
+    let seed = node::resolve_seed();
     if seed.is_none() {
-        anyhow::bail!("an identity is required: set GHOSTNET_SEED or pass --seed; refusing to create an unreachable temporary identity");
+        anyhow::bail!("an identity is required: set GHOSTNET_SEED; refusing to create an unreachable temporary identity");
     }
     let endpoint = config::endpoint(endpoint)?;
     let mut args = vec!["send".to_string(), peer.clone(), message];

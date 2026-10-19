@@ -8,7 +8,7 @@ use clap::{Parser, Subcommand};
     about = "Hecate — encrypted mesh client · N11X Collective",
     long_about = None,
     propagate_version = true,
-    after_help = "Examples:\n  hecate setup\n  hecate identity create --name laptop\n  hecate config show\n  hecate history --limit 10\n  hecate send PEER \"hello\"\n\nSet GHOSTNET_SEED for send/listen. Run without a command in a terminal for the shell."
+    after_help = "Examples:\n  hecate setup --sdk-version 1.2.3\n  hecate identity create --name laptop\n  hecate config show\n  hecate history --limit 10\n  hecate send PEER \"hello\"\n\nSet GHOSTNET_SEED for identity load/send/listen. Run without a command in a terminal for the shell."
 )]
 pub struct Cli {
     /// Show version (alias for --version).
@@ -28,8 +28,12 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Install the GhostNet SDK bridge (runs `npm install @n11x/ghostnet-sdk`).
-    Setup,
+    /// Install an exact GhostNet SDK version with lifecycle scripts disabled.
+    Setup {
+        /// Exact SDK version to install (for example, 1.2.3).
+        #[arg(long, value_name = "VERSION")]
+        sdk_version: String,
+    },
 
     /// Show CLI / SDK status and N11X Collective info.
     Info,
@@ -69,10 +73,6 @@ pub enum Commands {
         /// Message text (maximum 64 KiB UTF-8).
         message: String,
 
-        /// Seed phrase to restore an identity. Prefer GHOSTNET_SEED to avoid argv/history exposure.
-        #[arg(long)]
-        seed: Option<String>,
-
         /// Override the relay endpoint (wss:// only).
         #[arg(long)]
         endpoint: Option<String>,
@@ -80,10 +80,6 @@ pub enum Commands {
 
     /// Connect to the mesh and stream incoming messages.
     Listen {
-        /// Seed phrase to restore an identity. Prefer GHOSTNET_SEED to avoid argv/history exposure.
-        #[arg(long)]
-        seed: Option<String>,
-
         /// Override the relay endpoint (wss:// only).
         #[arg(long)]
         endpoint: Option<String>,
@@ -99,13 +95,8 @@ pub enum IdentityAction {
         name: Option<String>,
     },
 
-    /// Restore an identity from a 12-word seed phrase.
-    ///
-    /// Tip: set the GHOSTNET_SEED environment variable instead of passing the
-    /// phrase as an argument, to keep it out of shell history and process lists.
+    /// Restore an identity using GHOSTNET_SEED.
     Load {
-        /// The 12-word seed phrase (quote it). Omit to read from GHOSTNET_SEED.
-        seed: Option<String>,
         /// Save the restored public node ID under a local label. The seed is never stored.
         #[arg(long)]
         name: Option<String>,

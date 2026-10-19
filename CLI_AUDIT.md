@@ -146,3 +146,12 @@ Resolution retained the audit's installer pipeline/timeouts, telemetry removal, 
 The test harness now executes the `hecate` binary, expects its version output, and validates installer output named `hecate`/`hecate.exe`. The current canonical command reference is the README and `hecate --help`. No health credential or health reporting was reintroduced while resolving the launcher conflict.
 
 Post-resolution verification passed: all 15 tests via `npm test`, formatting/clippy via `npm run check`, locked release build, all four JavaScript syntax checks, npm package dry run, and whitespace check. The resulting release binary reports `hecate 0.2.13`; its help lists the preserved commands with Hecate examples, and config/history JSON smoke checks passed.
+
+## Daybreak security remediation
+
+The subsequent Daybreak Blue review validated two low-severity issues and both are remediated in source:
+
+- Seed phrases are no longer accepted through `identity load` positional arguments or `send`/`listen --seed`. Identity restoration and messaging read the seed only from `GHOSTNET_SEED`, and the Node bridge rejects legacy seed arguments. This prevents the CLI from placing a seed in process arguments or shell history.
+- `setup` now requires `--sdk-version` with an exact semantic version. Tags, ranges, URLs and local package specifications are rejected before npm starts. npm receives `--save-exact --ignore-scripts`, so the generated bridge manifest/lockfile records the chosen version and package lifecycle scripts cannot execute during setup. The repository does not invent a default SDK version because the intended package is still unavailable from the public registry.
+
+Regression coverage verifies that legacy secret-bearing arguments fail with clap status 2, environment-based seed operation still reaches the bridge without placing the seed in child arguments, mutable SDK specifications fail, and npm installation arguments preserve the exact-version and lifecycle-script controls.

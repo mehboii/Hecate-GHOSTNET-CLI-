@@ -16,10 +16,7 @@ pub fn run(action: IdentityAction) -> Result<()> {
     // For `load`, the seed is passed to the child via env (not argv).
     let (args, seed): (Vec<String>, Option<String>) = match &action {
         IdentityAction::Create { .. } => (vec!["identity-create".to_string()], None),
-        IdentityAction::Load { seed, .. } => (
-            vec!["identity-load".to_string()],
-            node::resolve_seed(seed.clone()),
-        ),
+        IdentityAction::Load { .. } => (vec!["identity-load".to_string()], node::resolve_seed()),
         IdentityAction::List | IdentityAction::Remove { .. } => {
             unreachable!("dispatched separately")
         }
@@ -27,7 +24,7 @@ pub fn run(action: IdentityAction) -> Result<()> {
 
     if matches!(action, IdentityAction::Load { .. }) && seed.is_none() {
         return Err(anyhow::anyhow!(
-            "a 12-word seed phrase is required (pass it as an argument or set GHOSTNET_SEED)"
+            "a 12-word seed phrase is required; set GHOSTNET_SEED"
         ));
     }
 

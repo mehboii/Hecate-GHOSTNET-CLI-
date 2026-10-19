@@ -8,7 +8,7 @@ pub fn run() -> Result<()> {
         if node::bridge_installed() {
             "installed"
         } else {
-            "not installed — run `hecate setup`"
+            "not installed — run `hecate setup --sdk-version VERSION`"
         }
     );
     println!(

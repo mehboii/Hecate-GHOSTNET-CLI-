@@ -4,7 +4,5 @@
   "private": true,
   "type": "module",
   "description": "Node bridge that lets Hecate drive @n11x/ghostnet-sdk",
-  "dependencies": {
-    "@n11x/ghostnet-sdk": "latest"
-  }
+  "dependencies": {}
 }
