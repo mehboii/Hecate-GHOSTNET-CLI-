@@ -8,7 +8,7 @@ use clap::{Parser, Subcommand};
     about = "Hecate — encrypted mesh client · N11X Collective",
     long_about = None,
     propagate_version = true,
-    after_help = "Examples:\n  hecate setup --sdk-version 1.2.3\n  hecate identity create --name laptop\n  hecate config show\n  hecate history --limit 10\n  hecate send PEER \"hello\"\n\nSet GHOSTNET_SEED for identity load/send/listen. Run without a command in a terminal for the shell."
+    after_help = "Examples:\n  hecate setup --sdk-version 0.2.0\n  hecate identity create --name laptop\n  hecate peer add friend 0xNODE_ID PUBLIC_KEY\n  hecate send friend \"hello\"\n  hecate config show\n  hecate history --limit 10\n\nSet GHOSTNET_SEED for identity load/send/listen. Run without a command in a terminal for the shell."
 )]
 pub struct Cli {
     /// Show version (alias for --version).
@@ -28,7 +28,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Install an exact GhostNet SDK version with lifecycle scripts disabled.
+    /// Install an exact Atlas SDK version with lifecycle scripts disabled.
     Setup {
         /// Exact SDK version to install (for example, 1.2.3).
         #[arg(long, value_name = "VERSION")]
@@ -63,6 +63,12 @@ pub enum Commands {
     Identity {
         #[command(subcommand)]
         action: IdentityAction,
+    },
+
+    /// Manage trusted Atlas peer public keys.
+    Peer {
+        #[command(subcommand)]
+        action: PeerAction,
     },
 
     /// Send an end-to-end encrypted message to a peer.
@@ -106,6 +112,23 @@ pub enum IdentityAction {
     List,
 
     /// Remove a local public identity label (not the network identity).
+    Remove { name: String },
+}
+
+#[derive(Subcommand)]
+pub enum PeerAction {
+    /// Register a peer key verified through a trusted out-of-band channel.
+    Add {
+        /// Local label used by `hecate send`.
+        name: String,
+        /// Expected Atlas node ID (0x followed by 64 lowercase hex characters).
+        node_id: String,
+        /// Ed25519 public key (64 lowercase hex characters).
+        public_key: String,
+    },
+    /// List trusted peer labels, node IDs, and public keys.
+    List,
+    /// Remove a locally trusted peer registration.
     Remove { name: String },
 }
 

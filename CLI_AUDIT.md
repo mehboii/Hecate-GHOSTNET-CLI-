@@ -155,3 +155,9 @@ The subsequent Daybreak Blue review validated two low-severity issues and both a
 - `setup` now requires `--sdk-version` with an exact semantic version. Tags, ranges, URLs and local package specifications are rejected before npm starts. npm receives `--save-exact --ignore-scripts`, so the generated bridge manifest/lockfile records the chosen version and package lifecycle scripts cannot execute during setup. The repository does not invent a default SDK version because the intended package is still unavailable from the public registry.
 
 Regression coverage verifies that legacy secret-bearing arguments fail with clap status 2, environment-based seed operation still reaches the bridge without placing the seed in child arguments, mutable SDK specifications fail, and npm installation arguments preserve the exact-version and lifecycle-script controls.
+
+## Atlas 0.2.0 migration
+
+The unavailable `@n11x/ghostnet-sdk` dependency was replaced with the published `@n11x/atlas` package. Hecate preserves Atlas's encryption-required default. Because Atlas requires a verified recipient key before encrypted sends, Hecate now has an explicit trusted-peer registry. `peer add` accepts an independently verified expected node ID and Ed25519 public key, uses Atlas `addPeer()` to derive the key's node ID, and persists public material only when they match. `send` resolves only a trusted record and repeats the binding check inside the bridge. Relay announcements are not persisted as trust decisions.
+
+The setup version parser now uses the Rust `semver` implementation rather than an incomplete hand-written parser. npm installation remains exact and lifecycle scripts remain disabled. Live recipient-side relay delivery is still a separate verification boundary.

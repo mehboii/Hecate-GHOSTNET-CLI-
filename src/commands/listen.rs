@@ -80,6 +80,13 @@ fn render_event(value: &Value) {
                 .and_then(Value::as_str)
                 .unwrap_or("(unknown)");
             println!("  {} {}", "your node id:".bright_black(), id.bright_cyan());
+            if let Some(public_key) = value.get("publicKey").and_then(Value::as_str) {
+                println!(
+                    "  {} {}",
+                    "your public key:".bright_black(),
+                    public_key.bright_cyan()
+                );
+            }
         }
         "connect" => println!("  {}", "● connected to the mesh".green()),
         "disconnect" => {

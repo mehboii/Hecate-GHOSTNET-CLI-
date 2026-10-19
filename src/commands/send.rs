@@ -5,17 +5,19 @@ use crate::{config, history, node};
 
 pub fn run(peer: String, message: String, endpoint: Option<String>) -> Result<()> {
     validate_message(&message)?;
-    if peer.trim().is_empty() || peer.chars().any(|c| c.is_whitespace() || c.is_control()) {
-        anyhow::bail!(
-            "peer node ID must be nonempty and contain no whitespace or control characters"
-        );
-    }
+    config::validate_label(&peer)?;
+    let trusted_peer = config::trusted_peer(&peer)?;
     let seed = node::resolve_seed();
     if seed.is_none() {
         anyhow::bail!("an identity is required: set GHOSTNET_SEED; refusing to create an unreachable temporary identity");
     }
     let endpoint = config::endpoint(endpoint)?;
-    let mut args = vec!["send".to_string(), peer.clone(), message];
+    let mut args = vec![
+        "send".to_string(),
+        trusted_peer.node_id.clone(),
+        message,
+        trusted_peer.public_key,
+    ];
     if let Some(endpoint) = endpoint {
         args.push("--endpoint".to_string());
         args.push(endpoint);
@@ -24,14 +26,14 @@ pub fn run(peer: String, message: String, endpoint: Option<String>) -> Result<()
     println!(
         "{} {}",
         "→ Connecting to the mesh and sending to".cyan(),
-        peer.bright_cyan()
+        trusted_peer.node_id.bright_cyan()
     );
 
     let response = node::run_bridge_json(&args, seed.as_deref())?;
     if response.get("sent").and_then(serde_json::Value::as_bool) != Some(true) {
         anyhow::bail!("SDK bridge did not confirm the send operation");
     }
-    if let Err(error) = history::record("sent", &peer, args[2].len(), "sent") {
+    if let Err(error) = history::record("sent", &trusted_peer.node_id, args[2].len(), "sent") {
         eprintln!("warning: message sent, but could not record metadata: {error}");
     }
 

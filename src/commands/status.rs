@@ -16,6 +16,7 @@ pub fn run() -> Result<()> {
         config.endpoint.as_deref().unwrap_or("SDK default")
     );
     println!("Public identity labels: {}", config.identities.len());
+    println!("Trusted peers: {}", config.trusted_peers.len());
     println!(
         "Identity loaded: {}",
         if std::env::var("GHOSTNET_SEED")
